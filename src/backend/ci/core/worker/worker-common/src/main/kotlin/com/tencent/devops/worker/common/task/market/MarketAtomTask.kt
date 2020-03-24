@@ -86,6 +86,7 @@ open class MarketAtomTask : ITask() {
         val atomVersion = taskParams["version"] as String
         val data = taskParams["data"] ?: "{}"
         val map = JsonUtil.toMutableMapSkipEmpty(data)
+        val elementId = buildTask.elementId ?: ""
 
         logger.info("Start to execute the plugin task($atomName)($atomCode)")
         // 获取插件基本信息
@@ -253,6 +254,7 @@ open class MarketAtomTask : ITask() {
                     command.append("\r\n${atomData.target.replace("\$bk_java_path", "%bk_java_path%")}\r\n")
                     BatScriptUtil.execute(
                         buildId = buildVariables.buildId,
+                        elementId = elementId,
                         script = command.toString(),
                         runtimeVariables = environment,
                         dir = atomTmpSpace,
@@ -268,6 +270,7 @@ open class MarketAtomTask : ITask() {
                     command.append("\n${atomData.target}\n")
                     ShellUtil.execute(
                         buildId = buildVariables.buildId,
+                        elementId = elementId,
                         script = command.toString(),
                         dir = atomTmpSpace,
                         buildEnvs = buildVariables.buildEnvs,

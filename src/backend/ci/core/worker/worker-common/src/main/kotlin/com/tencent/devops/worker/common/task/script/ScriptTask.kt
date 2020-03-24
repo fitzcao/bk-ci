@@ -61,19 +61,22 @@ open class ScriptTask : ITask() {
         val continueNoneZero = taskParams["continueNoneZero"] ?: "false"
         // 如果脚本执行失败之后可以选择归档这个问题
         val archiveFileIfExecFail = taskParams["archiveFile"]
-        val script = URLDecoder.decode(taskParams["script"]
+        val script = URLDecoder.decode(
+            taskParams["script"]
                 ?: throw TaskExecuteException(
                     errorMsg = "Empty build script content",
                     errorType = ErrorType.USER,
                     errorCode = ErrorCode.USER_INPUT_INVAILD
-                ), "UTF-8").replace("\r", "")
+                ), "UTF-8"
+        ).replace("\r", "")
         logger.info("Start to execute the script task($scriptType) ($script)")
         val command = CommandFactory.create(scriptType)
         val buildId = buildVariables.buildId
         val runtimeVariables = buildVariables.variables
         val projectId = buildVariables.projectId
+        val elementId = buildTask.elementId ?: ""
 
-        ScriptEnvUtils.cleanEnv(buildId, workspace)
+        ScriptEnvUtils.cleanEnv(buildId, elementId, workspace)
 
         val variables = if (buildTask.buildVariable == null) {
             runtimeVariables
@@ -83,6 +86,7 @@ open class ScriptTask : ITask() {
         try {
             command.execute(
                 buildId = buildId,
+                elementId = elementId,
                 script = script,
                 taskParam = taskParams,
                 runtimeVariables = variables,
@@ -107,14 +111,15 @@ open class ScriptTask : ITask() {
             )
         } finally {
             // 成功失败都写入环境变量
-            addEnv(ScriptEnvUtils.getEnv(buildId, workspace))
+            addEnv(ScriptEnvUtils.getEnv(buildId, elementId, workspace))
         }
 
         // 设置质量红线指标信息
         setGatewayValue(workspace)
     }
 
-    open fun takeBuildEnvs(buildTask: BuildTask, buildVariables: BuildVariables): List<BuildEnv> = buildVariables.buildEnvs
+    open fun takeBuildEnvs(buildTask: BuildTask, buildVariables: BuildVariables): List<BuildEnv> =
+        buildVariables.buildEnvs
 
     private fun setGatewayValue(workspace: File) {
         try {

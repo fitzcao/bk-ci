@@ -77,6 +77,6 @@ class LinuxCodeCCScriptTask : ITask() {
         else CodeccUtils().executeCommand(coverityConfig)
 
         // 写入环境变量
-        addEnv(CodeccEnvHelper.getCodeccEnv(workspace, buildTask.buildId))
+        addEnv(CodeccEnvHelper.getCodeccEnv(workspace, buildTask.elementId ?: "", buildTask.buildId))
     }
 }

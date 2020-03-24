@@ -66,6 +66,7 @@ class BuildPushDockerImageTask : ITask() {
         val dockerFile = taskParams["dockerFile"]
         val projectId = buildVariables.projectId
         val buildId = buildVariables.buildId
+        val elementId = buildTask.elementId ?: ""
 
         val responseMap = api.dockerBuildCredential(projectId)
         logger.info("responseMap is $responseMap")
@@ -116,12 +117,12 @@ class BuildPushDockerImageTask : ITask() {
             logger.info("Start to build the docker images.")
             val command = CommandFactory.create(BuildScriptType.SHELL.name)
             val runtimeVariables = buildVariables.variablesWithType.map { it.key to it.value.toString() }.toMap()
-            command.execute(buildId, loginScript, taskParams, runtimeVariables, projectId, workspace, buildVariables.buildEnvs)
+            command.execute(buildId, elementId, loginScript, taskParams, runtimeVariables, projectId, workspace, buildVariables.buildEnvs)
 
             LoggerService.addNormalLine("Start to build the docker image. imageName:$imageName; imageTag:$imageTag")
             val buildScript = "sudo docker build --pull -f $dockerFile -t $repoAddr/paas/$projectId/$imageName:$imageTag $buildDir"
             try {
-                command.execute(buildId, buildScript, taskParams, runtimeVariables, projectId, workspace, buildVariables.buildEnvs)
+                command.execute(buildId, elementId, buildScript, taskParams, runtimeVariables, projectId, workspace, buildVariables.buildEnvs)
             } catch (t: RuntimeException) {
                 LoggerService.addNormalLine(Ansi().fgRed().a("Dockerfile第一行请确认使用 $repoAddr").reset().toString())
                 throw TaskExecuteException(
@@ -133,7 +134,7 @@ class BuildPushDockerImageTask : ITask() {
 
             LoggerService.addNormalLine("Start to push the docker image. imageName:$imageName; imageTag:$imageTag")
             val pushScript = "sudo docker push $repoAddr/paas/$projectId/$imageName:$imageTag"
-            command.execute(buildId, pushScript, taskParams, runtimeVariables, projectId, workspace, buildVariables.buildEnvs)
+            command.execute(buildId, elementId, pushScript, taskParams, runtimeVariables, projectId, workspace, buildVariables.buildEnvs)
         }
     }
 

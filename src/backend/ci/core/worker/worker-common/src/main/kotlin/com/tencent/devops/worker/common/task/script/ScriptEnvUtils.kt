@@ -34,16 +34,16 @@ object ScriptEnvUtils {
     private const val QUALITY_GATEWAY_FILE = "gatewayValueFile.ini"
     private val logger = LoggerFactory.getLogger(ScriptEnvUtils::class.java)
 
-    fun cleanEnv(buildId: String, workspace: File) {
-        cleanScriptEnv(workspace, getEnvFile(buildId))
+    fun cleanEnv(buildId: String, elementId: String, workspace: File) {
+        cleanScriptEnv(workspace, getEnvFile(buildId, elementId))
     }
 
-    fun getEnv(buildId: String, workspace: File): Map<String, String> {
-        return readScriptEnv(workspace, getEnvFile(buildId))
+    fun getEnv(buildId: String, elementId: String, workspace: File): Map<String, String> {
+        return readScriptEnv(workspace, getEnvFile(buildId, elementId))
     }
 
-    fun getEnvFile(buildId: String): String {
-        return "$buildId-$ENV_FILE"
+    fun getEnvFile(buildId: String, elementId: String): String {
+        return "$buildId-$elementId-$ENV_FILE"
     }
 
     fun getQualityGatewayEnvFile() = QUALITY_GATEWAY_FILE
