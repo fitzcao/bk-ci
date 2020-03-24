@@ -35,7 +35,6 @@ class CommandShellImpl() : ICommand {
 
     override fun execute(
         buildId: String,
-        elementId: String,
         script: String,
         taskParam: Map<String, String>,
         runtimeVariables: Map<String, String>,
@@ -45,6 +44,6 @@ class CommandShellImpl() : ICommand {
         continueNoneZero: Boolean
     ) {
         val realCommand = parseTemplate(buildId, script, taskParam.plus(runtimeVariables))
-        ShellUtil.execute(buildId, elementId, realCommand, dir, buildEnvs, runtimeVariables, continueNoneZero)
+        ShellUtil.execute(buildId, realCommand, dir, buildEnvs, runtimeVariables, continueNoneZero)
     }
 }

@@ -36,7 +36,6 @@ interface ICommand {
 
     fun execute(
         buildId: String,
-        elementId: String,
         script: String,
         taskParam: Map<String, String>,
         runtimeVariables: Map<String, String>,

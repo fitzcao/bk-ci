@@ -81,7 +81,6 @@ object ShellUtil {
 
     fun execute(
         buildId: String,
-        elementId: String,
         script: String,
         dir: File,
         buildEnvs: List<BuildEnv>,
@@ -93,7 +92,6 @@ object ShellUtil {
         return executeUnixCommand(
             command = getCommandFile(
                 buildId = buildId,
-                elementId = elementId,
                 script = script,
                 dir = dir,
                 buildEnvs = buildEnvs,
@@ -108,7 +106,6 @@ object ShellUtil {
 
     fun getCommandFile(
         buildId: String,
-        elementId: String,
         script: String,
         dir: File,
         buildEnvs: List<BuildEnv>,
@@ -190,7 +187,7 @@ object ShellUtil {
             command.append("set +e\n")
         }
 
-        command.append(setEnv.replace("##resultFile##", File(dir, ScriptEnvUtils.getEnvFile(buildId, elementId)).absolutePath))
+        command.append(setEnv.replace("##resultFile##", File(dir, ScriptEnvUtils.getEnvFile(buildId)).absolutePath))
         command.append(setGateValue.replace("##gateValueFile##", File(dir, ScriptEnvUtils.getQualityGatewayEnvFile()).absolutePath))
         command.append(script)
 

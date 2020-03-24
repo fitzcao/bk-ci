@@ -59,7 +59,6 @@ object BatScriptUtil {
 
     fun execute(
         buildId: String,
-        elementId: String,
         script: String,
         runtimeVariables: Map<String, String>,
         dir: File,
@@ -67,7 +66,7 @@ object BatScriptUtil {
         prefix: String = ""
     ): String {
         try {
-            val file = getCommandFile(buildId, elementId, script, runtimeVariables, dir, systemEnvVariables)
+            val file = getCommandFile(buildId,  script, runtimeVariables, dir, systemEnvVariables)
             return CommandLineUtils.execute("cmd.exe /C \"${file.canonicalPath}\"", dir, true, prefix)
         } catch (e: Throwable) {
             logger.warn("Fail to execute bat script $script", e)
@@ -77,7 +76,6 @@ object BatScriptUtil {
 
     fun getCommandFile(
         buildId: String,
-        elementId: String,
         script: String,
         runtimeVariables: Map<String, String>,
         dir: File,
@@ -113,7 +111,7 @@ object BatScriptUtil {
             .append("\r\n")
             .append("exit")
             .append("\r\n")
-            .append(setEnv.replace("##resultFile##", File(dir, ScriptEnvUtils.getEnvFile(buildId, elementId)).absolutePath))
+            .append(setEnv.replace("##resultFile##", File(dir, ScriptEnvUtils.getEnvFile(buildId)).absolutePath))
             .append(setGateValue.replace("##gateValueFile##", File(dir, ScriptEnvUtils.getQualityGatewayEnvFile()).canonicalPath))
 
         val charset = Charset.defaultCharset()

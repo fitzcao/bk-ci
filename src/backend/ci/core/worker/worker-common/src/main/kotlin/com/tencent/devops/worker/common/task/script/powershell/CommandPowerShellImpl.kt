@@ -38,7 +38,6 @@ class CommandPowerShellImpl() : ICommand {
 
     override fun execute(
         buildId: String,
-        elementId: String,
         script: String,
         taskParam: Map<String, String>,
         runtimeVariables: Map<String, String>,

@@ -40,8 +40,8 @@ object CodeccEnvHelper {
 
     private val api = ApiFactory.create(CodeccSDKApi::class)
 
-    fun getCodeccEnv(workspace: File, elementId: String, buildId: String): Map<String, String> {
-        return ScriptEnvUtils.getEnv(buildId, elementId, workspace)
+    fun getCodeccEnv(workspace: File,  buildId: String): Map<String, String> {
+        return ScriptEnvUtils.getEnv(buildId, workspace)
     }
 
     fun saveTask(buildVariables: BuildVariables) {

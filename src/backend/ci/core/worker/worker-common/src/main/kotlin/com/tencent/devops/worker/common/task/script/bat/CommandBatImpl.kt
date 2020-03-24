@@ -36,7 +36,6 @@ class CommandBatImpl() :
 
     override fun execute(
         buildId: String,
-        elementId: String,
         script: String,
         taskParam: Map<String, String>,
         runtimeVariables: Map<String, String>,
@@ -46,6 +45,6 @@ class CommandBatImpl() :
         continueNoneZero: Boolean
     ) {
         val realCommand = parseTemplate(buildId, script, taskParam.plus(runtimeVariables))
-        BatScriptUtil.execute(buildId = buildId, elementId = elementId, script = realCommand, runtimeVariables = runtimeVariables, dir = dir)
+        BatScriptUtil.execute(buildId = buildId,  script = realCommand, runtimeVariables = runtimeVariables, dir = dir)
     }
 }

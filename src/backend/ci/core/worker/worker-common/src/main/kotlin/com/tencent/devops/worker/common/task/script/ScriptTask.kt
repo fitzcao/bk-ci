@@ -40,6 +40,7 @@ import com.tencent.devops.worker.common.logger.LoggerService
 import com.tencent.devops.worker.common.task.ITask
 import com.tencent.devops.worker.common.task.script.bat.WindowsScriptTask
 import com.tencent.devops.worker.common.utils.ArchiveUtils
+import com.tencent.devops.worker.common.utils.ExecutorUtil
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.net.URLDecoder
@@ -74,9 +75,8 @@ open class ScriptTask : ITask() {
         val buildId = buildVariables.buildId
         val runtimeVariables = buildVariables.variables
         val projectId = buildVariables.projectId
-        val elementId = buildTask.elementId ?: ""
 
-        ScriptEnvUtils.cleanEnv(buildId, elementId, workspace)
+        ScriptEnvUtils.cleanEnv(buildId, workspace)
 
         val variables = if (buildTask.buildVariable == null) {
             runtimeVariables
@@ -86,7 +86,6 @@ open class ScriptTask : ITask() {
         try {
             command.execute(
                 buildId = buildId,
-                elementId = elementId,
                 script = script,
                 taskParam = taskParams,
                 runtimeVariables = variables,
@@ -111,7 +110,7 @@ open class ScriptTask : ITask() {
             )
         } finally {
             // 成功失败都写入环境变量
-            addEnv(ScriptEnvUtils.getEnv(buildId, elementId, workspace))
+            addEnv(ScriptEnvUtils.getEnv(buildId, workspace))
         }
 
         // 设置质量红线指标信息

@@ -395,7 +395,6 @@ open class CodeccUtils {
         return if (AgentEnv.getOS() == OSType.WINDOWS) {
             BatScriptUtil.getCommandFile(
                 buildId = codeccExecuteConfig.buildTask.buildId,
-                elementId = codeccExecuteConfig.buildTask.elementId ?: "",
                 script = script,
                 dir = codeccExecuteConfig.workspace,
                 runtimeVariables = codeccExecuteConfig.buildVariables.variables
@@ -403,7 +402,6 @@ open class CodeccUtils {
         } else {
             ShellUtil.getCommandFile(
                 buildId = codeccExecuteConfig.buildTask.buildId,
-                elementId = codeccExecuteConfig.buildTask.elementId ?: "",
                 script = script,
                 dir = codeccExecuteConfig.workspace,
                 buildEnvs = codeccExecuteConfig.buildVariables.buildEnvs,
@@ -422,7 +420,6 @@ open class CodeccUtils {
         return if (AgentEnv.getOS() == OSType.WINDOWS) {
             BatScriptUtil.execute(
                 buildId = codeccExecuteConfig.buildTask.buildId,
-                elementId = codeccExecuteConfig.buildTask.elementId ?: "",
                 script = list.joinToString(" "),
                 dir = codeccExecuteConfig.workspace,
                 runtimeVariables = variables,
@@ -430,7 +427,6 @@ open class CodeccUtils {
         } else {
             ShellUtil.execute(
                 buildId = codeccExecuteConfig.buildTask.buildId,
-                elementId = codeccExecuteConfig.buildTask.elementId ?: "",
                 script = list.joinToString(" "),
                 dir = codeccExecuteConfig.workspace,
                 buildEnvs = takeBuildEnvs(codeccExecuteConfig),
