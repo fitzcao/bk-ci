@@ -75,7 +75,9 @@ class ControlUtilsTest {
                             customVariables = nullObject,
                             runCondition = RunCondition.PRE_TASK_FAILED_ONLY,
                             retryCount = 0,
-                            retryWhenFailed = false
+                            retryWhenFailed = false,
+                            pauseBeforeExec = false,
+                            subscriptionPauseUser = null
                         ), status
                     )
                 )
@@ -91,7 +93,9 @@ class ControlUtilsTest {
                             customVariables = nullObject,
                             runCondition = RunCondition.PRE_TASK_FAILED_ONLY,
                             retryCount = 0,
-                            retryWhenFailed = false
+                            retryWhenFailed = false,
+                            pauseBeforeExec = false,
+                            subscriptionPauseUser = null
                         ), status
                     )
                 )
@@ -108,7 +112,9 @@ class ControlUtilsTest {
                     enable = false, continueWhenFailed = false, timeout = 0, runCondition = null,
                     otherTask = null, customCondition = null, customVariables = null,
                     retryCount = 0,
-                    retryWhenFailed = false
+                    retryWhenFailed = false,
+                    pauseBeforeExec = false,
+                    subscriptionPauseUser = null
                 )
             )
         )
@@ -118,7 +124,9 @@ class ControlUtilsTest {
                     enable = true, continueWhenFailed = true, timeout = 0, runCondition = null,
                     otherTask = null, customCondition = null, customVariables = null,
                     retryCount = 0,
-                    retryWhenFailed = false
+                    retryWhenFailed = false,
+                    pauseBeforeExec = false,
+                    subscriptionPauseUser = null
                 )
             )
         )
@@ -135,7 +143,9 @@ class ControlUtilsTest {
                     enable = true, continueWhenFailed = false, timeout = 0, runCondition = null,
                     otherTask = null, customCondition = null, customVariables = null,
                     retryCount = 0,
-                    retryWhenFailed = false
+                    retryWhenFailed = false,
+                    pauseBeforeExec = false,
+                    subscriptionPauseUser = null
                 )
             )
         )
@@ -145,7 +155,9 @@ class ControlUtilsTest {
                     enable = true, continueWhenFailed = true, timeout = 0, runCondition = null,
                     otherTask = null, customCondition = null, customVariables = null,
                     retryCount = 0,
-                    retryWhenFailed = false
+                    retryWhenFailed = false,
+                    pauseBeforeExec = false,
+                    subscriptionPauseUser = null
                 )
             )
         )

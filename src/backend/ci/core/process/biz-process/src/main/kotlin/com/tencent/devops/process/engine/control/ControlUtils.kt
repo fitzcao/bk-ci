@@ -86,6 +86,14 @@ object ControlUtils {
         }
     }
 
+    fun pauseBeforeExec(additionalOptions: ElementAdditionalOptions?): Boolean {
+        if(additionalOptions == null) {
+            return false
+        }
+
+        return additionalOptions.pauseBeforeExec?: false
+    }
+
     fun checkAdditionalSkip(
         buildId: String,
         additionalOptions: ElementAdditionalOptions?,
