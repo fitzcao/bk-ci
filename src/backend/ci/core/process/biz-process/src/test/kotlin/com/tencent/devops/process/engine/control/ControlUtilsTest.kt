@@ -109,8 +109,13 @@ class ControlUtilsTest {
         Assert.assertFalse(
             ControlUtils.isEnable(
                 ElementAdditionalOptions(
-                    enable = false, continueWhenFailed = false, timeout = 0, runCondition = null,
-                    otherTask = null, customCondition = null, customVariables = null,
+                    enable = false,
+                    continueWhenFailed = false,
+                    timeout = 0,
+                    runCondition = null,
+                    otherTask = null,
+                    customCondition = null,
+                    customVariables = null,
                     retryCount = 0,
                     retryWhenFailed = false,
                     pauseBeforeExec = false,
@@ -121,8 +126,13 @@ class ControlUtilsTest {
         Assert.assertTrue(
             ControlUtils.continueWhenFailure(
                 ElementAdditionalOptions(
-                    enable = true, continueWhenFailed = true, timeout = 0, runCondition = null,
-                    otherTask = null, customCondition = null, customVariables = null,
+                    enable = true,
+                    continueWhenFailed = true,
+                    timeout = 0,
+                    runCondition = null,
+                    otherTask = null,
+                    customCondition = null,
+                    customVariables = null,
                     retryCount = 0,
                     retryWhenFailed = false,
                     pauseBeforeExec = false,
@@ -140,8 +150,13 @@ class ControlUtilsTest {
         Assert.assertFalse(
             ControlUtils.continueWhenFailure(
                 ElementAdditionalOptions(
-                    enable = true, continueWhenFailed = false, timeout = 0, runCondition = null,
-                    otherTask = null, customCondition = null, customVariables = null,
+                    enable = true,
+                    continueWhenFailed = false,
+                    timeout = 0,
+                    runCondition = null,
+                    otherTask = null,
+                    customCondition = null,
+                    customVariables = null,
                     retryCount = 0,
                     retryWhenFailed = false,
                     pauseBeforeExec = false,
@@ -152,8 +167,13 @@ class ControlUtilsTest {
         Assert.assertTrue(
             ControlUtils.continueWhenFailure(
                 ElementAdditionalOptions(
-                    enable = true, continueWhenFailed = true, timeout = 0, runCondition = null,
-                    otherTask = null, customCondition = null, customVariables = null,
+                    enable = true,
+                    continueWhenFailed = true,
+                    timeout = 0,
+                    runCondition = null,
+                    otherTask = null,
+                    customCondition = null,
+                    customVariables = null,
                     retryCount = 0,
                     retryWhenFailed = false,
                     pauseBeforeExec = false,
@@ -169,7 +189,7 @@ class ControlUtilsTest {
         val conditions = mutableListOf(NameAndValue("key1", "a"), NameAndValue("key2", "b"))
         val variables = mutableMapOf("key1" to "a", "key2" to "b")
         Assert.assertTrue(
-            ControlUtils.checkSkipCondition(
+            ControlUtils.checkJobSkipCondition(
                 conditions = conditions,
                 variables = variables,
                 buildId = buildId,
@@ -177,7 +197,7 @@ class ControlUtilsTest {
             )
         )
         Assert.assertFalse(
-            ControlUtils.checkSkipCondition(
+            ControlUtils.checkJobSkipCondition(
                 conditions = conditions,
                 variables = variables,
                 buildId = buildId,
@@ -191,7 +211,7 @@ class ControlUtilsTest {
         variables.clear()
         variables["key3"] = "un"
         Assert.assertFalse(
-            ControlUtils.checkSkipCondition(
+            ControlUtils.checkJobSkipCondition(
                 conditions = conditions,
                 variables = variables,
                 buildId = buildId,
@@ -199,7 +219,7 @@ class ControlUtilsTest {
             )
         )
         Assert.assertTrue(
-            ControlUtils.checkSkipCondition(
+            ControlUtils.checkJobSkipCondition(
                 conditions = conditions,
                 variables = variables,
                 buildId = buildId,
@@ -207,7 +227,7 @@ class ControlUtilsTest {
             )
         )
         Assert.assertFalse(
-            ControlUtils.checkSkipCondition(
+            ControlUtils.checkJobSkipCondition(
                 conditions = conditions,
                 variables = variables,
                 buildId = buildId,
