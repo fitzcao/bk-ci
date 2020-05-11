@@ -30,11 +30,16 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.util.JsonUtil
+import com.tencent.devops.common.client.Client
+import com.tencent.devops.common.pipeline.enums.BuildStatus
 import com.tencent.devops.common.pipeline.pojo.element.ElementAdditionalOptions
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.log.utils.LogUtils
+import com.tencent.devops.notify.api.service.ServiceNotifyMessageTemplateResource
+import com.tencent.devops.notify.pojo.SendNotifyMessageTemplateRequest
 import com.tencent.devops.process.dao.PipelineTaskDao
 import com.tencent.devops.process.engine.control.ControlUtils
+import com.tencent.devops.process.engine.dao.PipelineInfoDao
 import com.tencent.devops.process.engine.dao.PipelineModelTaskDao
 import com.tencent.devops.process.engine.pojo.PipelineModelTask
 import com.tencent.devops.process.engine.service.PipelineRuntimeService
@@ -52,6 +57,8 @@ class PipelineTaskService @Autowired constructor(
     val objectMapper: ObjectMapper,
     val pipelineTaskDao: PipelineTaskDao,
     val pipelineModelTaskDao: PipelineModelTaskDao,
+    val pipelineInfoDao: PipelineInfoDao,
+    val client: Client,
     private val rabbitTemplate: RabbitTemplate,
     private val pipelineRuntimeService: PipelineRuntimeService
 ) {
@@ -101,7 +108,8 @@ class PipelineTaskService @Autowired constructor(
             pipelineAtoms?.forEach {
                 val pipelineId = it["pipelineId"] as String
                 val taskParamsStr = it["taskParams"] as? String
-                val taskParams = if (!taskParamsStr.isNullOrBlank()) JsonUtil.getObjectMapper().readValue(taskParamsStr, Map::class.java) as Map<String, Any> else mapOf()
+                val taskParams = if (!taskParamsStr.isNullOrBlank()) JsonUtil.getObjectMapper()
+                    .readValue(taskParamsStr, Map::class.java) as Map<String, Any> else mapOf()
                 if (pipelineAtomVersionInfo.containsKey(pipelineId)) {
                     pipelineAtomVersionInfo[pipelineId]!!.add(taskParams["version"].toString())
                 } else {
@@ -119,7 +127,8 @@ class PipelineTaskService @Autowired constructor(
                     pipelineId = pipelineId,
                     pipelineName = it["pipelineName"] as String,
                     projectCode = it["projectCode"] as String,
-                    atomVersion = pipelineAtomVersionInfo.getOrDefault(pipelineId, mutableListOf<String>()).distinct().joinToString(",")
+                    atomVersion = pipelineAtomVersionInfo.getOrDefault(pipelineId, mutableListOf<String>()).distinct()
+                        .joinToString(",")
                 )
             }
         }
@@ -147,6 +156,41 @@ class PipelineTaskService @Autowired constructor(
         return isRry
     }
 
+    fun isPause(taskId: String, buildId: String, seqId: String): Boolean {
+        val taskRecord = pipelineRuntimeService.getBuildTask(buildId, taskId)
+        val isPause = ControlUtils.pauseBeforeExec(taskRecord!!.additionalOptions)
+        if (isPause) {
+            logger.info("pause atom, buildId[$buildId], taskId[$taskId] , seqId[$seqId], additionalOptions[${taskRecord!!.additionalOptions}]")
+            LogUtils.addYellowLine(
+                rabbitTemplate = rabbitTemplate,
+                buildId = buildId,
+                message = "当前插件${taskRecord.taskName}暂停中，等待手动点击继续",
+                tag = taskRecord.taskId,
+                jobId = taskRecord.containerId,
+                executeCount = 1
+            )
+
+            // 修改当前任务状态为"暂停"状态
+            pipelineRuntimeService.updateTaskStatus(
+                buildId = buildId,
+                taskId = taskId,
+                userId = "",
+                buildStatus = BuildStatus.PAUSE
+            )
+
+            // 发送消息给相关关注人
+            val sendUser = taskRecord.additionalOptions!!.subscriptionPauseUser
+            if(sendUser != null ) {
+                sendPauseNotify(buildId, taskRecord.taskName, taskId, sendUser)
+            } else {
+                val pipelineInfo = pipelineInfoDao.getPipelineInfo(dslContext, taskRecord.pipelineId)
+                val lastUpdateUser = pipelineInfo?.lastModifyUser
+                sendPauseNotify(buildId, taskRecord.taskName, taskId, setOf(lastUpdateUser) as Set<String>)
+            }
+        }
+        return isPause
+    }
+
     fun removeRetryCache(buildId: String, taskId: String) {
         // 清除该原子内的重试记录
         redisOperation.delete(getRedisKey(buildId, taskId))
@@ -154,6 +198,19 @@ class PipelineTaskService @Autowired constructor(
 
     private fun getRedisKey(buildId: String, taskId: String): String {
         return "$retryCountRedisKey$buildId:$taskId"
+    }
+
+    private fun sendPauseNotify(buildId: String, taskName: String, taskId: String, receivers: Set<String>) {
+        // TODO: 配置推送模版
+        val msg = SendNotifyMessageTemplateRequest(
+            templateCode = "",
+            sender = "DevOps",
+            titleParams = mutableMapOf(),
+            bodyParams = mutableMapOf(),
+            receivers = receivers as MutableSet<String>
+        )
+        client.get(ServiceNotifyMessageTemplateResource::class)
+            .sendNotifyMessageByTemplate(msg)
     }
 
     companion object {

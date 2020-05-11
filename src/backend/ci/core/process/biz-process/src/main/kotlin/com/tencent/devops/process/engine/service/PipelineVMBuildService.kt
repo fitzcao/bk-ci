@@ -402,6 +402,15 @@ class PipelineVMBuildService @Autowired(required = false) constructor(
                 ) ?: return@nextQueueTask
             }
         } else {
+            val nextTask = queueTasks[0]
+            if (pipelineTaskService.isPause(
+                    taskId = nextTask.taskId,
+                    buildId = nextTask.buildId,
+                    seqId = vmSeqId
+                )
+            ) {
+                return BuildTask(buildId, vmSeqId, BuildTaskStatus.END)
+            }
             val buildTask = claim(
                 task = queueTasks[0],
                 buildId = buildId,
@@ -436,6 +445,16 @@ class PipelineVMBuildService @Autowired(required = false) constructor(
         if (task.taskAtom.isNotBlank()) {
             logger.info("[$buildId]|taskId=${task.taskId}|taskAtom=${task.taskAtom}|do not run in vm agent, skip!")
             return BuildTask(buildId, vmSeqId, BuildTaskStatus.WAIT)
+        }
+
+        // 如果插件配置了前置暂停, 暂停期间关闭当前构建机，节约资源。
+        if (pipelineTaskService.isPause(
+                taskId = task.taskId,
+                buildId = task.buildId,
+                seqId = vmSeqId
+            )
+        ) {
+            return BuildTask(buildId, vmSeqId, BuildTaskStatus.END)
         }
 
         val turboTaskId = getTurboTask(task.pipelineId, task.taskId)
