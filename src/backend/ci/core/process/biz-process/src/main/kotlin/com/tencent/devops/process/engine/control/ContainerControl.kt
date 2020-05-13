@@ -408,6 +408,7 @@ class ContainerControl @Autowired constructor(
             } else {
                 val pipelineBuildTask = pipelineBuildTasks[0]
                 if(BuildStatus.isFinish(pipelineBuildTask.status)) {
+                    containerFinalStatus = BuildStatus.PAUSE
                     Triple(waitToDoTask, containerFinalStatus, startVMFail)
                 } else {
                     waitToDoTask = pipelineBuildTask
