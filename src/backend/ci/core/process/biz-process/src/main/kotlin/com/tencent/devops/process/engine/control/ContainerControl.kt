@@ -91,7 +91,7 @@ class ContainerControl @Autowired constructor(
         }
 
         // 当build的状态是结束的时候，直接返回
-        if (BuildStatus.isFinish(container.status) || container.status.equals(BuildStatus.PAUSE)) {
+        if (BuildStatus.isFinish(container.status)) {
             return
         }
 
@@ -189,7 +189,7 @@ class ContainerControl @Autowired constructor(
         val (waitToDoTask, containerFinalStatus, startVMFail) =
             when {
                 // 要求启动执行的请求
-                ActionType.isStart(actionType) || ActionType.REFRESH == actionType -> checkStartAction(containerTaskList)
+                ActionType.isStart(actionType) || ActionType.REFRESH == actionType -> checkStartAction(containerTaskList, container)
                     ?: return
                 // 要求强制终止
                 ActionType.isTerminate(actionType) -> {
@@ -198,6 +198,9 @@ class ContainerControl @Autowired constructor(
                 // 要求停止执行的请求
                 ActionType.isEnd(actionType) -> {
                     checkEndAction(containerTaskList)
+                }
+                ActionType.isPause(actionType) -> {
+                    checkPauseAction(containerTaskList)
                 }
                 else -> { // 未规定的类型，打回上一级处理
                     logger.warn("[$buildId]|CONTAINER_UNKNOWN_ACTION|stage=$stageId|container=$containerId|actionType=$actionType")
@@ -370,14 +373,51 @@ class ContainerControl @Autowired constructor(
         return Triple(waitToDoTask, containerFinalStatus, startVMFail)
     }
 
+    private fun checkPauseAction(containerTaskList: Collection<PipelineBuildTask>): Triple<PipelineBuildTask?, BuildStatus, Boolean> {
+        var waitToDoTask: PipelineBuildTask? = null
+        var containerFinalStatus: BuildStatus = BuildStatus.PAUSE
+        var startVMFail = false
+        containerTaskList.forEach nextOne@{
+            if(it.taskId.startsWith(VMUtils.getStopVmLabel()) && it.taskName.startsWith(VMUtils.getCleanVmLable())) {
+                if(!BuildStatus.isFinish(it.status)) {
+                    waitToDoTask = it
+                    return Triple(waitToDoTask, containerFinalStatus, startVMFail)
+                }
+            }
+        }
+        return Triple(waitToDoTask, containerFinalStatus, startVMFail)
+    }
+
     private fun PipelineBuildContainerEvent.checkStartAction(
-        containerTaskList: Collection<PipelineBuildTask>
+        containerTaskList: Collection<PipelineBuildTask>,
+        container: PipelineBuildContainer
     ): Triple<PipelineBuildTask?, BuildStatus, Boolean>? {
 
         var waitToDoTask: PipelineBuildTask? = null
         var containerFinalStatus: BuildStatus = BuildStatus.SUCCEED
         var hasFailedTaskInSuccessContainer = false
         var startVMFail = false
+
+        // 若为暂停，则要确保拿到的任务为 关机或者空任务发送next stage任务
+        if(BuildStatus.isPause(container.status)){
+            logger.info("containerControl find next task,container status[${container.status}]")
+            val pipelineBuildTasks = containerTaskList.filter { it.taskName.startsWith(VMUtils.getCleanVmLable()); it.taskId.startsWith(VMUtils.getStopVmLabel()) }
+            logger.info("containerControl find next task| buildId[${container.buildId}], pipelineBuildTasks[$pipelineBuildTasks]")
+            return if(pipelineBuildTasks == null) {
+                Triple(waitToDoTask, containerFinalStatus, startVMFail)
+            } else {
+                val pipelineBuildTask = pipelineBuildTasks[0]
+                if(BuildStatus.isFinish(pipelineBuildTask.status)) {
+                    Triple(waitToDoTask, containerFinalStatus, startVMFail)
+                } else {
+                    waitToDoTask = pipelineBuildTask
+                    containerFinalStatus = BuildStatus.PAUSE
+                    logger.info("containerControl find next task| buildId[${container.buildId}], next task: stopVM")
+                    Triple(waitToDoTask, containerFinalStatus, startVMFail)
+                }
+            }
+        }
+
 
         containerTaskList.forEach nextOne@{ task ->
             if (!ControlUtils.isEnable(task.additionalOptions)) {
@@ -536,6 +576,23 @@ class ContainerControl @Autowired constructor(
                 buildId = buildId,
                 stageId = stageId,
                 actionType = ActionType.REFRESH
+            )
+        )
+    }
+
+    // 暂停自己,container状态为pause， 跳过中间所有任务，之间下发关机请求
+    private fun PipelineBuildContainerEvent.sendPauseContainer() {
+        pipelineEventDispatcher.dispatch(
+            PipelineBuildContainerEvent(
+                source = "pausePipeline",
+                projectId = projectId,
+                pipelineId = pipelineId,
+                userId = userId,
+                buildId = buildId,
+                stageId = stageId,
+                actionType = ActionType.PAUSE,
+                containerId = containerId,
+                containerType = containerType
             )
         )
     }

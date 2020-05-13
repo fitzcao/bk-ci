@@ -1483,14 +1483,14 @@ class PipelineRuntimeService @Autowired constructor(
             with(buildTask) {
                 pipelineEventDispatcher.dispatch(
                     PipelineBuildContainerEvent(
-                        javaClass.simpleName,
-                        projectId,
-                        pipelineId,
-                        userId,
-                        buildId,
-                        stageId,
-                        containerId,
-                        containerType, ActionType.REFRESH
+                        source = javaClass.simpleName,
+                        projectId = projectId,
+                        pipelineId = pipelineId,
+                        userId = userId,
+                        buildId = buildId,
+                        stageId = stageId,
+                        containerId = containerId,
+                        containerType = containerType, actionType = ActionType.REFRESH
                     )
                 )
             }
