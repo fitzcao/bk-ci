@@ -613,7 +613,6 @@ class PipelineBuildDetailService @Autowired constructor(
                 if(stage.id == stageId) {
                     update = true
                     stage.status = buildStatus.name
-                    return Traverse.BREAK
                 }
                 return Traverse.CONTINUE
             }

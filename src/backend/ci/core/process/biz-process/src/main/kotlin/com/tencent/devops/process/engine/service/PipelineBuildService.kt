@@ -1804,6 +1804,14 @@ class PipelineBuildService(
 
             // 不再继续则直接关闭流水线
             if (!isContinue) {
+                LogUtils.addYellowLine(
+                    rabbitTemplate = rabbitTemplate,
+                    buildId = buildId,
+                    message = "暂停插件由$userId 停止，流水线终止",
+                    tag = taskId,
+                    jobId = containerId,
+                    executeCount = 1
+                )
                 buildManualShutdown(
                     userId = userId,
                     pipelineId = pipelineId,
@@ -1817,11 +1825,11 @@ class PipelineBuildService(
             executePauseBuild(
                 pipelineId = pipelineId,
                 buildId = buildId,
-                projectId = projectId,
                 taskId = taskId,
                 stageId = stageId,
                 containerId = containerId
             )
+
             val params = mutableMapOf<String, Any>()
             buildVariableService.batchSetVariable(projectId, pipelineId, buildId, params)
             // 修改插件运行设置
@@ -1841,6 +1849,14 @@ class PipelineBuildService(
                     containerType = ""
                 )
             )
+            LogUtils.addYellowLine(
+                rabbitTemplate = rabbitTemplate,
+                buildId = buildId,
+                message = "暂停插件由$userId 继续，流水线继续运行",
+                tag = taskId,
+                jobId = containerId,
+                executeCount = 1
+            )
         } finally {
             redisLock.unlock()
         }
@@ -1850,7 +1866,6 @@ class PipelineBuildService(
     private fun executePauseBuild(
         pipelineId: String,
         buildId: String,
-        projectId: String,
         taskId: String,
         stageId: String,
         containerId: String
