@@ -89,6 +89,7 @@ import com.tencent.devops.process.pojo.pipeline.PipelineLatestBuild
 import com.tencent.devops.process.service.BuildStartupParamService
 import com.tencent.devops.process.service.BuildVariableService
 import com.tencent.devops.process.service.ParamService
+import com.tencent.devops.process.service.PipelineTaskService
 import com.tencent.devops.process.utils.PIPELINE_NAME
 import com.tencent.devops.process.utils.PIPELINE_RETRY_BUILD_ID
 import com.tencent.devops.process.utils.PIPELINE_RETRY_COUNT
@@ -134,6 +135,7 @@ class PipelineBuildService(
     private val rabbitTemplate: RabbitTemplate,
     private val dslContext: DSLContext,
     private val pipelineBuildDao: PipelineBuildDao,
+    private val pipelineTaskService: PipelineTaskService,
     private val buildDetailDao: BuildDetailDao,
     private val pipelineBuildTaskDao: PipelineBuildTaskDao,
     private val objectMapper: ObjectMapper,
@@ -340,6 +342,11 @@ class PipelineBuildService(
                     errorCode = ProcessMessageCode.DENY_START_BY_MANUAL
                 )
             }
+
+            // 清理插件暂停信息
+            // TODO：目前暂停开关的维度为整体流水线
+            pipelineTaskService.pauseTaskFinishExecute(buildId, taskId)
+
             val params = mutableMapOf<String, Any>()
             val originVars = buildVariableService.getAllVariable(buildId)
             if (!taskId.isNullOrBlank()) {
