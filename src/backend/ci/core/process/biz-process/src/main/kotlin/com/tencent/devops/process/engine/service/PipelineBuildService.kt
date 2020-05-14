@@ -27,6 +27,7 @@
 package com.tencent.devops.process.engine.service
 
 import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.api.model.SQLPage
 import com.tencent.devops.common.api.pojo.BuildHistoryPage
@@ -47,6 +48,7 @@ import com.tencent.devops.common.pipeline.enums.ManualReviewAction
 import com.tencent.devops.common.pipeline.enums.StartType
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildParameters
+import com.tencent.devops.common.pipeline.pojo.element.Element
 import com.tencent.devops.common.pipeline.pojo.element.agent.ManualReviewUserTaskElement
 import com.tencent.devops.common.pipeline.pojo.element.trigger.ManualTriggerElement
 import com.tencent.devops.common.pipeline.pojo.element.trigger.RemoteTriggerElement
@@ -134,6 +136,7 @@ class PipelineBuildService(
     private val pipelineBuildDao: PipelineBuildDao,
     private val buildDetailDao: BuildDetailDao,
     private val pipelineBuildTaskDao: PipelineBuildTaskDao,
+    private val objectMapper: ObjectMapper,
     private val buildParamCompatibilityTransformer: BuildParametersCompatibilityTransformer
 ) {
     companion object {
@@ -311,7 +314,7 @@ class PipelineBuildService(
                     params = arrayOf(buildId)
                 )
 
-            if (!BuildStatus.isFinish(buildInfo.status)) {
+            if (!BuildStatus.isFinish(buildInfo.status) || BuildStatus.isPause(buildInfo.status)) {
                 throw ErrorCodeException(
                     errorCode = ProcessMessageCode.ERROR_DUPLICATE_BUILD_RETRY_ACT,
                     defaultMessage = "重试已经启动，忽略重复的请求"
@@ -1772,7 +1775,7 @@ class PipelineBuildService(
         stageId: String,
         containerId: String,
         isContinue: Boolean,
-        element: String,
+        element: Element,
         checkPermission: Boolean? = true
     ): Boolean {
         if (checkPermission!!) {
@@ -1847,7 +1850,10 @@ class PipelineBuildService(
             val params = mutableMapOf<String, Any>()
             buildVariableService.batchSetVariable(projectId, pipelineId, buildId, params)
             // 修改插件运行设置
-            pipelineBuildTaskDao.updateTaskParam(dslContext, buildId, taskId, element)
+            pipelineBuildTaskDao.updateTaskParam(dslContext, buildId, taskId, objectMapper.writeValueAsString(element))
+
+            //修改详情model
+            buildDetailService.updateElementWhenPauseContinue(buildId, stageId, containerId, taskId, element)
 
             // 触发引擎container事件，继续后续流程
             pipelineEventDispatcher.dispatch(

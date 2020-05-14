@@ -87,12 +87,17 @@ object ControlUtils {
         }
     }
 
+    // 需要暂停，且没有暂停过
     fun pauseBeforeExec(additionalOptions: ElementAdditionalOptions?): Boolean {
         if(additionalOptions == null) {
             return false
         }
 
-        return additionalOptions.pauseBeforeExec?: false
+        if(additionalOptions.pauseBeforeExec == true && additionalOptions.isExecPause == false) {
+            return true
+        }
+
+        return false
     }
 
     fun checkAdditionalSkip(

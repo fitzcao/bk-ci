@@ -565,6 +565,9 @@ class PipelineVMBuildService @Autowired(required = false) constructor(
             errorMsg = result.message
         )
 
+        // 重置前置暂停插件暂停状态位
+        pipelineTaskService.pauseTaskFinishExecute(buildId, result.taskId)
+
         // 发送度量数据
         sendElementData(
             buildId = buildId,

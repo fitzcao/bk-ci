@@ -26,6 +26,7 @@
 
 package com.tencent.devops.process.engine.service
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.tencent.devops.common.api.util.EnvUtils
 import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.api.util.timestampmilli
@@ -63,6 +64,7 @@ import java.time.LocalDateTime
 @Service
 class PipelineBuildDetailService @Autowired constructor(
     private val dslContext: DSLContext,
+    private val objectMapper: ObjectMapper,
     private val buildDetailDao: BuildDetailDao,
     private val pipelineRepositoryService: PipelineRepositoryService,
     private val pipelineStageService: PipelineStageService,
@@ -848,6 +850,33 @@ class PipelineBuildDetailService @Autowired constructor(
                 return update
             }
         }, BuildStatus.RUNNING)
+    }
+
+    fun updateElementWhenPauseContinue(buildId: String, stageId: String, containerId: String, taskId: String, element: Element) {
+        logger.info("[$buildId|$containerId] update detail element $element")
+        val detailRecord = buildDetailDao.get(dslContext, buildId)
+        if(detailRecord == null) {
+            logger.warn("update detail element record is empty,buildId[$buildId]")
+            return
+        }
+        val model = JsonUtil.to(detailRecord.model, Model::class.java)
+        model.stages.forEach { s->
+            if(s.id.equals(stageId)) {
+                s.containers.forEach { c->
+                    if(c.id.equals(containerId)) {
+                        val newElement = mutableListOf<Element>()
+                        c.elements.forEach { e->
+                            if(e.id.equals(element.id)) {
+                                newElement.add(element)
+                            }
+                            newElement.add(e)
+                        }
+                        c.elements = newElement
+                    }
+                }
+            }
+        }
+        buildDetailDao.updateModel(dslContext, buildId, objectMapper.writeValueAsString(model))
     }
 
     private fun updateHistoryStage(buildId: String, model: Model) {
