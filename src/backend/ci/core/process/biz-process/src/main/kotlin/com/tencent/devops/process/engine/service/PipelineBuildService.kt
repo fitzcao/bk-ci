@@ -1899,6 +1899,8 @@ class PipelineBuildService(
             userId = "",
             buildStatus = BuildStatus.QUEUE
         )
+        logger.info("update|$buildId|$taskId| task status  to ${BuildStatus.QUEUE}")
+
         // 将启动和结束任务置为排队。用于启动构建机
         val taskRecords = pipelineRuntimeService.getAllBuildTask(buildId)
         val startAndEndTask = mutableListOf<PipelineBuildTask>()
@@ -1920,6 +1922,7 @@ class PipelineBuildService(
                 userId = "",
                 buildStatus = BuildStatus.QUEUE
             )
+            logger.info("update|$buildId|${it.taskId}| task status from ${it.status} to ${BuildStatus.QUEUE}")
         }
 
         // 修改容器状态位运行
@@ -1931,28 +1934,6 @@ class PipelineBuildService(
             endTime = null,
             buildStatus = BuildStatus.QUEUE
         )
-//
-//        // 修改stage状位位
-//        pipelineStageService.updateStageStatus(
-//            buildId = buildId,
-//            stageId = stageId,
-//            buildStatus = BuildStatus.QUEUE
-//        )
-//
-//        // 修改构建记录为暂停
-//        pipelineBuildDao.updateStatus(
-//            dslContext = dslContext,
-//            buildId = buildId,
-//            oldBuildStatus = BuildStatus.PAUSE,
-//            newBuildStatus = BuildStatus.RUNNING
-//        )
-//
-//        buildDetailDao.updateStatus(
-//            dslContext = dslContext,
-//            buildId = buildId,
-//            buildStatus = BuildStatus.QUEUE,
-//            startTime = null,
-//            endTime = null
-//        )
+        logger.info("update|$buildId|$taskId| container status  to ${BuildStatus.QUEUE}")
     }
 }
