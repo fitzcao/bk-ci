@@ -603,7 +603,7 @@ class PipelineBuildDetailService @Autowired constructor(
             override fun needUpdate(): Boolean {
                 return update
             }
-        }, buildStatus)
+        }, BuildStatus.RUNNING)
     }
 
     fun pauseTask(buildId: String, stageId: String, containerId: String, taskId: String, buildStatus: BuildStatus) {
@@ -698,7 +698,7 @@ class PipelineBuildDetailService @Autowired constructor(
             override fun needUpdate(): Boolean {
                 return update
             }
-        }, BuildStatus.SKIP)
+        }, BuildStatus.RUNNING)
     }
 
     fun stagePause(pipelineId: String, buildId: String, stageId: String) {
