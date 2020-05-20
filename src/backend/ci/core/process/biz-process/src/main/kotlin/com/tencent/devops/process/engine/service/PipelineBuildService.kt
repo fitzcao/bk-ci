@@ -392,6 +392,7 @@ class PipelineBuildService(
 
             params[PIPELINE_START_USER_ID] = userId
             params[PIPELINE_RETRY_BUILD_ID] = buildId
+            params[PIPELINE_START_TYPE] = originVars[PIPELINE_START_TYPE] ?: ""
 
             val readyToBuildPipelineInfo =
                 pipelineRepositoryService.getPipelineInfo(projectId, pipelineId, channelCode)
