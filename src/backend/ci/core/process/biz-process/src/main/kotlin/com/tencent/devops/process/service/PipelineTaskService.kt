@@ -40,13 +40,13 @@ import com.tencent.devops.log.utils.LogUtils
 import com.tencent.devops.notify.api.service.ServiceNotifyMessageTemplateResource
 import com.tencent.devops.notify.pojo.SendNotifyMessageTemplateRequest
 import com.tencent.devops.process.dao.PipelineTaskDao
-import com.tencent.devops.process.engine.common.BS_PAUSE_TASK
 import com.tencent.devops.process.engine.control.ControlUtils
 import com.tencent.devops.process.engine.dao.PipelineInfoDao
 import com.tencent.devops.process.engine.dao.PipelineModelTaskDao
 import com.tencent.devops.process.engine.pojo.PipelineModelTask
 import com.tencent.devops.process.engine.service.PipelineBuildDetailService
 import com.tencent.devops.process.engine.service.PipelineRuntimeService
+import com.tencent.devops.process.engine.utils.PauseRedisUtils
 import com.tencent.devops.process.pojo.PipelineProjectRel
 import com.tencent.devops.process.websocket.page.DetailPageBuild
 import com.tencent.devops.project.api.service.ServiceProjectResource
@@ -166,7 +166,7 @@ class PipelineTaskService @Autowired constructor(
 
     fun isPause(taskId: String, buildId: String): Boolean {
         val taskRecord = pipelineRuntimeService.getBuildTask(buildId, taskId)
-        val pauseFlag = redisOperation.get("$BS_PAUSE_TASK-$buildId")
+        val pauseFlag = redisOperation.get(PauseRedisUtils.getPauseRedisKey(buildId))
         val isPause = ControlUtils.pauseBeforeExec(taskRecord!!.additionalOptions, pauseFlag)
         if (isPause) {
             logger.info("pause atom, buildId[$buildId], taskId[$taskId] , additionalOptions[${taskRecord!!.additionalOptions}]")
@@ -210,7 +210,7 @@ class PipelineTaskService @Autowired constructor(
 
     // 重置暂停任务暂停状态位
     fun pauseTaskFinishExecute(buildId: String, taskId: String?) {
-        redisOperation.delete("$BS_PAUSE_TASK-$buildId")
+        redisOperation.delete(PauseRedisUtils.getPauseRedisKey(buildId))
     }
 
     private fun getRedisKey(buildId: String, taskId: String): String {
@@ -238,7 +238,7 @@ class PipelineTaskService @Autowired constructor(
         )
         logger.info("pauseBuild $buildId update detail status success")
 
-        redisOperation.set("$BS_PAUSE_TASK-$buildId", "true")
+        redisOperation.set(PauseRedisUtils.getPauseRedisKey(buildId), "true")
         logger.info("pauseTask set redis flag success")
     }
 
