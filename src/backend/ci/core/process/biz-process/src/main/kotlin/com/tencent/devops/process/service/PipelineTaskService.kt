@@ -35,6 +35,7 @@ import com.tencent.devops.common.notify.enums.NotifyType
 import com.tencent.devops.common.pipeline.enums.BuildStatus
 import com.tencent.devops.common.pipeline.pojo.element.ElementAdditionalOptions
 import com.tencent.devops.common.redis.RedisOperation
+import com.tencent.devops.common.websocket.pojo.BuildPageInfo
 import com.tencent.devops.log.utils.LogUtils
 import com.tencent.devops.notify.api.service.ServiceNotifyMessageTemplateResource
 import com.tencent.devops.notify.pojo.SendNotifyMessageTemplateRequest
@@ -47,6 +48,7 @@ import com.tencent.devops.process.engine.pojo.PipelineModelTask
 import com.tencent.devops.process.engine.service.PipelineBuildDetailService
 import com.tencent.devops.process.engine.service.PipelineRuntimeService
 import com.tencent.devops.process.pojo.PipelineProjectRel
+import com.tencent.devops.process.websocket.page.DetailPageBuild
 import com.tencent.devops.project.api.service.ServiceProjectResource
 import com.tencent.devops.store.pojo.common.PIPELINE_TASK_PAUSE_NOTIFY
 import org.jooq.DSLContext
@@ -256,7 +258,14 @@ class PipelineTaskService @Autowired constructor(
         val pipelineName = (pipelineRecord?.pipelineName ?: "")
         val buildNum = buildRecord?.buildNum.toString()
         val projectName = client.get(ServiceProjectResource::class).get(pipelineRecord!!.projectId).data!!.projectName
-
+        val url =  DetailPageBuild().buildPage(
+            buildPageInfo = BuildPageInfo(
+                buildId = buildId,
+                pipelineId = pipelineId,
+                projectId = pipelineRecord.projectId,
+                atomId = null
+            )
+        )
         // 指定通过rtx发送
         val notifyType = mutableSetOf<String>()
         notifyType.add(NotifyType.RTX.name)
@@ -274,7 +283,7 @@ class PipelineTaskService @Autowired constructor(
             templateCode = PIPELINE_TASK_PAUSE_NOTIFY,
             sender = "DevOps",
             titleParams = mapOf(
-                "BK_CI_PIPLEINE_NAME" to pipelineName,
+                "BK_CI_PIPELINE_NAME" to pipelineName,
                 "BK_CI_BUILD_NUM" to buildNum
             ),
             notifyType = notifyType,
@@ -283,7 +292,8 @@ class PipelineTaskService @Autowired constructor(
                 "BK_CI_PIPELINE_NAME" to pipelineName,
                 "BK_CI_BUILD_NUM" to buildNum,
                 "taskName" to taskName,
-                "BK_CI_START_USER_ID" to (buildRecord?.startUser ?: "")
+                "BK_CI_START_USER_ID" to (buildRecord?.startUser ?: ""),
+                "url" to url
             ),
             receivers = receiver
         )
