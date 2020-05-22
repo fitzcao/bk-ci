@@ -54,6 +54,7 @@ import com.tencent.devops.common.pipeline.pojo.element.quality.QualityGateInElem
 import com.tencent.devops.common.pipeline.pojo.element.quality.QualityGateOutElement
 import com.tencent.devops.process.engine.utils.PauseRedisUtils
 import com.tencent.devops.process.service.BuildVariableService
+import com.tencent.devops.process.service.PipelineTaskService
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.slf4j.LoggerFactory
@@ -68,6 +69,7 @@ class PipelineBuildDetailService @Autowired constructor(
     private val objectMapper: ObjectMapper,
     private val buildDetailDao: BuildDetailDao,
     private val pipelineRepositoryService: PipelineRepositoryService,
+    private val pipelineTaskService: PipelineTaskService,
     private val pipelineStageService: PipelineStageService,
     private val pipelineRuntimeService: PipelineRuntimeService,
     private val buildVariableService: BuildVariableService,
@@ -930,6 +932,8 @@ class PipelineBuildDetailService @Autowired constructor(
                         logger.info("Refresh element| $buildId|${element.id}| $model")
                         // 恢复detail表model内的对应element为默认值
                         newElements.add(objectMapper.readValue(defaultElement, Element::class.java))
+                        // 重置插件状态开发
+                        pipelineTaskService.pauseTaskFinishExecute(buildId, element.id)
                         needUpdate = true
                     } else {
                         newElements.add(element)

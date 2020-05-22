@@ -61,20 +61,16 @@ import com.tencent.devops.common.service.utils.MessageCodeUtil
 import com.tencent.devops.common.websocket.dispatch.WebSocketDispatcher
 import com.tencent.devops.log.utils.LogUtils
 import com.tencent.devops.process.constant.ProcessMessageCode
-import com.tencent.devops.process.dao.BuildDetailDao
 import com.tencent.devops.process.engine.common.VMUtils
 import com.tencent.devops.process.engine.compatibility.BuildParametersCompatibilityTransformer
 import com.tencent.devops.process.engine.compatibility.BuildPropertyCompatibilityTools
 import com.tencent.devops.process.engine.control.lock.BuildIdLock
 import com.tencent.devops.process.engine.control.lock.PipelineBuildRunLock
-import com.tencent.devops.process.engine.dao.PipelineBuildDao
 import com.tencent.devops.process.engine.dao.PipelineBuildTaskDao
 import com.tencent.devops.process.engine.interceptor.InterceptData
 import com.tencent.devops.process.engine.interceptor.PipelineInterceptorChain
-import com.tencent.devops.process.engine.pojo.LatestRunningBuild
 import com.tencent.devops.process.engine.pojo.PipelineBuildTask
 import com.tencent.devops.process.engine.pojo.PipelineInfo
-import com.tencent.devops.process.engine.utils.PauseRedisUtils
 import com.tencent.devops.process.jmx.api.ProcessJmxApi
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.pojo.BuildBasicInfo
@@ -346,8 +342,6 @@ class PipelineBuildService(
             }
 
             // 清理插件暂停信息
-            // TODO：目前暂停开关的维度为整体流水线
-            pipelineTaskService.pauseTaskFinishExecute(buildId, taskId)
 
             val params = mutableMapOf<String, Any>()
             val originVars = buildVariableService.getAllVariable(buildId)
@@ -1823,39 +1817,26 @@ class PipelineBuildService(
             LogUtils.addYellowLine(
                 rabbitTemplate = rabbitTemplate,
                 buildId = buildId,
-                message = "暂停插件由$userId 停止，流水线终止",
+                message = "【${taskRecord.taskName}】已完成人工处理。处理人:$userId, 操作：停止",
                 tag = taskId,
                 jobId = containerId,
                 executeCount = 1
             )
-//            buildManualShutdown(
-//                userId = userId,
-//                pipelineId = pipelineId,
-//                projectId = projectId,
-//                buildId = buildId,
-//                channelCode = ChannelCode.BS
-//            )
-            // 触发引擎container事件，继续后续流程
-            pipelineEventDispatcher.dispatch(
-                PipelineBuildContainerEvent(
-                    source = "pauseCanel",
-                    containerId = containerId,
-                    stageId = stageId,
-                    pipelineId = pipelineId,
-                    buildId = buildId,
-                    userId = userId,
-                    projectId = projectId,
-                    actionType = ActionType.TERMINATE,
-                    containerType = ""
-                )
+            buildManualShutdown(
+                userId = userId,
+                pipelineId = pipelineId,
+                projectId = projectId,
+                buildId = buildId,
+                channelCode = ChannelCode.BS
             )
+            // 触发引擎container事件，继续后续流程
             return true
         }
 
         val redisLock = BuildIdLock(redisOperation = redisOperation, buildId = buildId)
         try {
             redisLock.lock()
-            executePauseBuild(
+            continuePauseTask(
                 pipelineId = pipelineId,
                 buildId = buildId,
                 taskId = taskId,
@@ -1899,7 +1880,7 @@ class PipelineBuildService(
             LogUtils.addYellowLine(
                 rabbitTemplate = rabbitTemplate,
                 buildId = buildId,
-                message = "暂停插件由$userId 继续，流水线继续运行",
+                message = "【${taskRecord.taskName}】已完成人工处理。处理人:$userId, 操作：继续",
                 tag = taskId,
                 jobId = containerId,
                 executeCount = 1
@@ -1910,7 +1891,7 @@ class PipelineBuildService(
         return true
     }
 
-    private fun executePauseBuild(
+    private fun continuePauseTask(
         pipelineId: String,
         buildId: String,
         taskId: String,
