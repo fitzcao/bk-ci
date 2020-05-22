@@ -55,6 +55,7 @@ import com.tencent.devops.process.pojo.BuildTaskResult
 import com.tencent.devops.process.pojo.BuildVariables
 import com.tencent.devops.process.pojo.mq.PipelineBuildContainerEvent
 import com.tencent.devops.process.service.BuildVariableService
+import com.tencent.devops.process.service.PipelineTaskPauseService
 import com.tencent.devops.process.service.PipelineTaskService
 import com.tencent.devops.process.utils.PIPELINE_ELEMENT_ID
 import com.tencent.devops.process.utils.PIPELINE_TURBO_TASK_ID
@@ -81,6 +82,7 @@ class PipelineVMBuildService @Autowired(required = false) constructor(
     private val rabbitTemplate: RabbitTemplate,
     private val pipelineEventDispatcher: PipelineEventDispatcher,
     private val pipelineTaskService: PipelineTaskService,
+    private val pipelineTaskPauseService: PipelineTaskPauseService,
     private val redisOperation: RedisOperation,
     private val jmxElements: JmxElements,
     private val consulClient: ConsulDiscoveryClient?,
@@ -564,7 +566,7 @@ class PipelineVMBuildService @Autowired(required = false) constructor(
         )
 
         // 重置前置暂停插件暂停状态位
-        pipelineTaskService.pauseTaskFinishExecute(buildId, result.taskId)
+        pipelineTaskPauseService.pauseTaskFinishExecute(buildId, result.taskId)
 
         // 发送度量数据
         sendElementData(

@@ -208,11 +208,6 @@ class PipelineTaskService @Autowired constructor(
         redisOperation.delete(getRedisKey(buildId, taskId))
     }
 
-    // 重置暂停任务暂停状态位
-    fun pauseTaskFinishExecute(buildId: String, taskId: String) {
-        redisOperation.delete(PauseRedisUtils.getPauseRedisKey(buildId, taskId))
-    }
-
     private fun getRedisKey(buildId: String, taskId: String): String {
         return "$retryCountRedisKey$buildId:$taskId"
     }
