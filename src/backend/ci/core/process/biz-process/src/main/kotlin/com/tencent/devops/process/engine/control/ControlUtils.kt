@@ -29,7 +29,6 @@ package com.tencent.devops.process.engine.control
 import com.tencent.devops.common.pipeline.NameAndValue
 import com.tencent.devops.common.pipeline.enums.BuildStatus
 import com.tencent.devops.common.pipeline.enums.JobRunCondition
-import com.tencent.devops.common.pipeline.enums.PauseStatus
 import com.tencent.devops.common.pipeline.enums.StageRunCondition
 import com.tencent.devops.common.pipeline.pojo.element.ElementAdditionalOptions
 import com.tencent.devops.common.pipeline.pojo.element.RunCondition
@@ -89,12 +88,12 @@ object ControlUtils {
     }
 
     // 需要暂停，且没有暂停过
-    fun pauseBeforeExec(additionalOptions: ElementAdditionalOptions?, pauseFlag : String?): Boolean {
-        if(additionalOptions == null) {
+    fun pauseBeforeExec(additionalOptions: ElementAdditionalOptions?, pauseFlag: String?): Boolean {
+        if (additionalOptions == null) {
             return false
         }
 
-        if(additionalOptions.pauseBeforeExec == true && pauseFlag.isNullOrEmpty()) {
+        if (additionalOptions.pauseBeforeExec == true && pauseFlag.isNullOrEmpty()) {
             return true
         }
 

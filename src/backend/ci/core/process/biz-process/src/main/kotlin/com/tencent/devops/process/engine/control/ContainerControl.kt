@@ -110,7 +110,7 @@ class ContainerControl @Autowired constructor(
         val stopTask = containerTaskList.filter { it.taskName.startsWith(VMUtils.getCleanVmLable()); it.taskId.startsWith(VMUtils.getStopVmLabel()) }
         containerTaskList.forEach findPauseTask@{
             if (BuildStatus.isPause(it.status)) {
-                if(BuildStatus.isFinish(stopTask[0].status)) {
+                if (BuildStatus.isFinish(stopTask[0].status)) {
                     actionType = ActionType.PAUSE
                 }
                 return@findPauseTask
@@ -408,9 +408,9 @@ class ContainerControl @Autowired constructor(
         var waitToDoTask: PipelineBuildTask? = null
         var containerFinalStatus: BuildStatus = BuildStatus.PAUSE
         var startVMFail = false
-        containerTaskList.forEach nextOne@{ task->
+        containerTaskList.forEach nextOne@{ task ->
             // 若为暂停，则要确保拿到的任务为 关机或者空任务发送next stage任务
-            if(BuildStatus.isPause(task.status)) {
+            if (BuildStatus.isPause(task.status)) {
                 val pipelineBuildTasks = containerTaskList.filter {
                     it.taskName.startsWith(VMUtils.getCleanVmLable()); it.taskId.startsWith(VMUtils.getStopVmLabel())
                 }
@@ -465,7 +465,7 @@ class ContainerControl @Autowired constructor(
             }
 
             // 若为暂停，则要确保拿到的任务为 关机或者空任务发送next stage任务
-            if(BuildStatus.isPause(task.status)) {
+            if (BuildStatus.isPause(task.status)) {
                 val pipelineBuildTasks = containerTaskList.filter {
                     it.taskName.startsWith(VMUtils.getCleanVmLable()); it.taskId.startsWith(VMUtils.getStopVmLabel())
                 }
@@ -490,7 +490,6 @@ class ContainerControl @Autowired constructor(
                     }
                 }
             }
-
 
             logger.info(
                 "[$buildId]|container=$containerId|task(${task.taskSeq})=${task.taskId}|${task.taskName}|${task.status}"
