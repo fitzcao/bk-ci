@@ -248,7 +248,7 @@ class ContainerControl @Autowired constructor(
         // 容器构建失败
         if (waitToDoTask == null && BuildStatus.isFailure(containerFinalStatus)) {
             if (!startVMFail) { // 非构建机启动失败的 做下收尾动作
-                if(source != BS_MANUAL_STOP_PAUSE_ATOM) { // 插件前置暂停，用户选择停止，无论后续怎么配置，都统一停止流水线。 --产品定的策略
+                if(source != BS_MANUAL_STOP_PAUSE_ATOM && source != "running_timeout") { // 插件前置暂停，用户选择停止，无论后续怎么配置，都统一停止流水线。 --产品定的策略
                     containerTaskList.forEach {
                         if (taskNeedRunWhenOtherTaskFail(it)) {
                             logger.info("[$buildId]|CONTAINER_$actionType|stage=$stageId|container=$containerId|taskId=${it.taskId}|Continue when failed")
