@@ -47,6 +47,7 @@ import com.tencent.devops.process.engine.service.PipelineRuntimeService
 import com.tencent.devops.common.api.pojo.ErrorCode
 import com.tencent.devops.common.api.pojo.ErrorType
 import com.tencent.devops.process.engine.common.BS_CONTAINER_END_SOURCE_PREIX
+import com.tencent.devops.process.engine.common.BS_MANUAL_STOP_PAUSE_ATOM
 import com.tencent.devops.process.pojo.mq.PipelineBuildContainerEvent
 import com.tencent.devops.process.service.BuildVariableService
 import com.tencent.devops.process.service.PipelineTaskService
@@ -247,10 +248,12 @@ class ContainerControl @Autowired constructor(
         // 容器构建失败
         if (waitToDoTask == null && BuildStatus.isFailure(containerFinalStatus)) {
             if (!startVMFail) { // 非构建机启动失败的 做下收尾动作
-                containerTaskList.forEach {
-                    if (taskNeedRunWhenOtherTaskFail(it)) {
-                        logger.info("[$buildId]|CONTAINER_$actionType|stage=$stageId|container=$containerId|taskId=${it.taskId}|Continue when failed")
-                        return sendTask(it, ActionType.START)
+                if(source != BS_MANUAL_STOP_PAUSE_ATOM) { // 插件前置暂停，用户选择停止，无论后续怎么配置，都统一停止流水线。 --产品定的策略
+                    containerTaskList.forEach {
+                        if (taskNeedRunWhenOtherTaskFail(it)) {
+                            logger.info("[$buildId]|CONTAINER_$actionType|stage=$stageId|container=$containerId|taskId=${it.taskId}|Continue when failed")
+                            return sendTask(it, ActionType.START)
+                        }
                     }
                 }
             }
