@@ -101,8 +101,7 @@ class StageControl @Autowired constructor(
             val needPause =
                 stage.controlOption?.stageControlOption?.manualTrigger == true && source != BS_MANUAL_START_STAGE
 
-            val fastKill =
-                stage.controlOption?.fastKill == true && source == "$BS_CONTAINER_END_SOURCE_PREIX${BuildStatus.FAILED}"
+            val fastKill = isFastKill(stage)
 
             logger.info("[$buildId]|[${buildInfo.status}]|STAGE_EVENT|event=$event|stage=$stage|needPause=$needPause|fastKill=$fastKill")
 
@@ -448,5 +447,17 @@ class StageControl @Autowired constructor(
                 status = BuildStatus.STAGE_SUCCESS
             )
         )
+    }
+
+    private fun PipelineBuildStageEvent.isFastKill(stage: PipelineBuildStage): Boolean {
+        if(stage.controlOption == null) {
+            return false
+        }
+        if (stage.controlOption!!.fastKill != null && stage.controlOption!!.fastKill!!) {
+            if (source == "$BS_CONTAINER_END_SOURCE_PREIX${BuildStatus.FAILED}" || source == "$BS_CONTAINER_END_SOURCE_PREIX${BuildStatus.CANCELED}") {
+                return true
+            }
+        }
+        return false
     }
 }
