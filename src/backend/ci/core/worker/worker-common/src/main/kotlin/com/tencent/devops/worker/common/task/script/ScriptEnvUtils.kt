@@ -39,7 +39,7 @@ object ScriptEnvUtils {
         cleanScriptEnv(workspace, getEnvFile(buildId))
     }
 
-    fun getEnv(buildId: String,  workspace: File): Map<String, String> {
+    fun getEnv(buildId: String, workspace: File): Map<String, String> {
         return readScriptEnv(workspace, getEnvFile(buildId))
     }
 
@@ -47,7 +47,6 @@ object ScriptEnvUtils {
         val randomNum = ExecutorUtil.getThreadLocal()
         return "$buildId-$randomNum-$ENV_FILE"
     }
-
 
     fun getQualityGatewayEnvFile() = QUALITY_GATEWAY_FILE
 

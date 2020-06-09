@@ -66,7 +66,7 @@ object BatScriptUtil {
         prefix: String = ""
     ): String {
         try {
-            val file = getCommandFile(buildId,  script, runtimeVariables, dir, systemEnvVariables)
+            val file = getCommandFile(buildId, script, runtimeVariables, dir, systemEnvVariables)
             return CommandLineUtils.execute("cmd.exe /C \"${file.canonicalPath}\"", dir, true, prefix)
         } catch (e: Throwable) {
             logger.warn("Fail to execute bat script $script", e)

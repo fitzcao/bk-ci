@@ -83,9 +83,9 @@ object ExecutorUtil {
         threadLocal.set(randomNum)
     }
 
-    fun getThreadLocal() : String {
+    fun getThreadLocal(): String {
         val value = threadLocal.get()
-        if(value == null) {
+        if (value == null) {
             setThreadLocal()
         }
         return threadLocal.get()
