@@ -31,8 +31,10 @@ import com.tencent.devops.common.event.enums.ActionType
 import com.tencent.devops.common.pipeline.enums.BuildStatus
 import com.tencent.devops.common.pipeline.enums.EnvControlTaskType
 import com.tencent.devops.common.pipeline.enums.StageRunCondition
+import com.tencent.devops.log.utils.LogUtils
 import com.tencent.devops.process.engine.common.BS_CONTAINER_END_SOURCE_PREIX
 import com.tencent.devops.process.engine.common.BS_MANUAL_START_STAGE
+import com.tencent.devops.process.engine.common.VMUtils
 import com.tencent.devops.process.engine.pojo.PipelineBuildContainer
 import com.tencent.devops.process.engine.pojo.PipelineBuildStage
 import com.tencent.devops.process.engine.pojo.event.PipelineBuildCancelEvent
@@ -44,6 +46,7 @@ import com.tencent.devops.process.engine.service.PipelineStageService
 import com.tencent.devops.process.pojo.mq.PipelineBuildContainerEvent
 import com.tencent.devops.process.service.BuildVariableService
 import org.slf4j.LoggerFactory
+import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -54,6 +57,7 @@ import java.time.LocalDateTime
  */
 @Service
 class StageControl @Autowired constructor(
+    private val rabbitTemplate: RabbitTemplate,
     private val pipelineEventDispatcher: PipelineEventDispatcher,
     private val pipelineRuntimeService: PipelineRuntimeService,
     private val buildVariableService: BuildVariableService,
@@ -125,6 +129,17 @@ class StageControl @Autowired constructor(
                             endTime = LocalDateTime.now(),
                             buildStatus = buildStatus
                         )
+
+                    if(fastKill) {
+                        LogUtils.addRedLine(
+                            rabbitTemplate = rabbitTemplate,
+                            buildId = c.buildId,
+                            message = "job${c.containerId}因fastKill终止。",
+                            tag = VMUtils.genStartVMTaskId(c.containerId),
+                            jobId = null,
+                            executeCount = c.executeCount ?: 1
+                        )
+                    }
                 }
 
                 // 如果是因审核超时终止构建，流水线状态
