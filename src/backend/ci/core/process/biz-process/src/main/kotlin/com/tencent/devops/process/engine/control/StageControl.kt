@@ -131,6 +131,7 @@ class StageControl @Autowired constructor(
                         )
 
                     if(fastKill) {
+                        logger.info("$buildId fastKill, add log ${c.containerId}")
                         LogUtils.addYellowLine(
                             rabbitTemplate = rabbitTemplate,
                             buildId = c.buildId,
