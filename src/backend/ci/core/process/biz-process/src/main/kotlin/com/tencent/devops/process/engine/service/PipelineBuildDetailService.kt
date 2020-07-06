@@ -44,6 +44,7 @@ import com.tencent.devops.model.process.tables.records.TPipelineBuildDetailRecor
 import com.tencent.devops.process.dao.BuildDetailDao
 import com.tencent.devops.process.engine.dao.PipelineBuildDao
 import com.tencent.devops.common.api.pojo.ErrorType
+import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.container.Stage
 import com.tencent.devops.common.pipeline.container.TriggerContainer
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
@@ -55,6 +56,7 @@ import com.tencent.devops.common.pipeline.pojo.element.quality.QualityGateOutEle
 import com.tencent.devops.process.engine.utils.PauseRedisUtils
 import com.tencent.devops.process.service.BuildVariableService
 import com.tencent.devops.process.service.PipelineTaskPauseService
+import com.tencent.devops.store.api.atom.ServiceMarketAtomEnvResource
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.slf4j.LoggerFactory
@@ -76,6 +78,7 @@ class PipelineBuildDetailService @Autowired constructor(
     private val webSocketDispatcher: WebSocketDispatcher,
     private val pipelineWebsocketService: PipelineWebsocketService,
     private val pipelineTaskPauseService: PipelineTaskPauseService,
+    private val client: Client,
     private val pipelineBuildDao: PipelineBuildDao
 ) {
 
@@ -857,6 +860,7 @@ class PipelineBuildDetailService @Autowired constructor(
                     if (c.startEpoch == null) {
                         c.startEpoch = e.startEpoch
                     }
+                    findTaskVersion(buildId, e.getAtomCode(), e.version)
                     update = true
                     return Traverse.BREAK
                 }
@@ -1104,6 +1108,19 @@ class PipelineBuildDetailService @Autowired constructor(
                 }
             }
         }
+    }
+
+    private fun findTaskVersion(buildId: String, atomCode: String , atomVersion: String?) : String? {
+        val projectCode = pipelineRuntimeService.getBuildInfo(buildId)!!.projectId
+        if(atomVersion.isNullOrBlank()) {
+            return atomVersion
+        }
+
+        if(atomVersion!!.contains("*")) {
+            val atomRecord = client.get(ServiceMarketAtomEnvResource::class).getAtomEnv(projectCode, atomCode, atomVersion)?.data
+            return atomRecord?.version ?: atomVersion
+        }
+        return atomVersion
     }
 
     protected interface ModelInterface {
