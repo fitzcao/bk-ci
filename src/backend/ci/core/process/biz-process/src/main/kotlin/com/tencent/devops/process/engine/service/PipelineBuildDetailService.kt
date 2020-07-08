@@ -54,6 +54,7 @@ import com.tencent.devops.process.utils.PipelineVarUtil
 import com.tencent.devops.common.pipeline.pojo.element.quality.QualityGateInElement
 import com.tencent.devops.common.pipeline.pojo.element.quality.QualityGateOutElement
 import com.tencent.devops.process.engine.utils.PauseRedisUtils
+import com.tencent.devops.process.engine.pojo.PipelineBuildStageControlOption
 import com.tencent.devops.process.service.BuildVariableService
 import com.tencent.devops.process.service.PipelineTaskPauseService
 import com.tencent.devops.store.api.atom.ServiceMarketAtomEnvResource
@@ -740,7 +741,12 @@ class PipelineBuildDetailService @Autowired constructor(
         }, BuildStatus.RUNNING)
     }
 
-    fun stagePause(pipelineId: String, buildId: String, stageId: String) {
+    fun stagePause(
+        pipelineId: String,
+        buildId: String,
+        stageId: String,
+        controlOption: PipelineBuildStageControlOption
+    ) {
         logger.info("[$buildId]|stage_pause|stageId=$stageId")
         update(buildId, object : ModelInterface {
             var update = false
@@ -749,6 +755,8 @@ class PipelineBuildDetailService @Autowired constructor(
                 if (stage.id == stageId) {
                     update = true
                     stage.status = BuildStatus.PAUSE.name
+                    stage.reviewStatus = BuildStatus.REVIEWING.name
+                    stage.stageControlOption!!.triggerUsers = controlOption.stageControlOption.triggerUsers
                     stage.startEpoch = System.currentTimeMillis()
                     pipelineBuildDao.updateStatus(dslContext, buildId, BuildStatus.RUNNING, BuildStatus.STAGE_SUCCESS)
                     // 被暂停的流水线不占构建队列，在执行数-1
@@ -774,6 +782,7 @@ class PipelineBuildDetailService @Autowired constructor(
                 if (stage.id == stageId) {
                     update = true
                     stage.status = ""
+                    stage.reviewStatus = BuildStatus.REVIEW_ABORT.name
                     pipelineBuildDao.updateStageCancelStatus(dslContext, buildId)
                     updateHistoryStage(buildId, model)
                     return Traverse.BREAK
@@ -796,6 +805,7 @@ class PipelineBuildDetailService @Autowired constructor(
                 if (stage.id == stageId) {
                     update = true
                     stage.status = BuildStatus.QUEUE.name
+                    stage.reviewStatus = BuildStatus.REVIEW_PROCESSED.name
                     pipelineBuildDao.updateStatus(dslContext, buildId, BuildStatus.STAGE_SUCCESS, BuildStatus.RUNNING)
                     pipelineStageService.updatePipelineRunningCount(pipelineId, buildId, 1)
                     updateHistoryStage(buildId, model)
@@ -882,8 +892,8 @@ class PipelineBuildDetailService @Autowired constructor(
             var update = false
 
             override fun onFindElement(e: Element, c: Container): Traverse {
-                if(c.id.equals(containerId)) {
-                    if(e.id.equals(taskId)) {
+                if (c.id.equals(containerId)) {
+                    if (e.id.equals(taskId)) {
                         c.status = BuildStatus.CANCELED.name
                         e.status = BuildStatus.CANCELED.name
                         update = true
@@ -975,9 +985,9 @@ class PipelineBuildDetailService @Autowired constructor(
                 val newElements = mutableListOf<Element>()
                 container.elements.forEach { element ->
                     // 重置插件状态开发
-                    if(element.id != null) {
+                    if (element.id != null) {
                         val pauseFlag = redisOperation.get(PauseRedisUtils.getPauseRedisKey(buildId, element.id!!))
-                        if(pauseFlag != null) {
+                        if (pauseFlag != null) {
                             logger.info("Refresh pauseFlag| $buildId|${element.id}")
                             pipelineTaskPauseService.pauseTaskFinishExecute(buildId, element.id!!)
                         }
@@ -1075,12 +1085,13 @@ class PipelineBuildDetailService @Autowired constructor(
             stopWatch.stop()
             message = "update done"
         } catch (ignored: Throwable) {
+            if (stopWatch.isRunning) {
+                stopWatch.stop()
+            }
             message = "${ignored.message}"
             logger.warn("[$buildId]| Fail to update the build detail: ${ignored.message}", ignored)
         } finally {
-            stopWatch.start("unlock")
             lock.unlock()
-            stopWatch.stop()
             logger.info("[$buildId|$buildStatus]|update_detail_model| $message| watch=$stopWatch")
         }
     }
@@ -1110,13 +1121,13 @@ class PipelineBuildDetailService @Autowired constructor(
         }
     }
 
-    private fun findTaskVersion(buildId: String, atomCode: String , atomVersion: String?) : String? {
+    private fun findTaskVersion(buildId: String, atomCode: String, atomVersion: String?): String? {
         val projectCode = pipelineRuntimeService.getBuildInfo(buildId)!!.projectId
-        if(atomVersion.isNullOrBlank()) {
+        if (atomVersion.isNullOrBlank()) {
             return atomVersion
         }
         logger.info("findTaskVersion $buildId| $atomCode | $atomVersion|")
-        if(atomVersion!!.contains("*")) {
+        if (atomVersion!!.contains("*")) {
             val atomRecord = client.get(ServiceMarketAtomEnvResource::class).getAtomEnv(projectCode, atomCode, atomVersion)?.data
             logger.info("lastVersion $buildId| $atomCode| $atomVersion| ${atomRecord?.version}")
             return atomRecord?.version ?: atomVersion

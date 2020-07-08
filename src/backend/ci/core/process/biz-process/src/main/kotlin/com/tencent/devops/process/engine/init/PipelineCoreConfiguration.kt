@@ -108,7 +108,7 @@ class PipelineCoreConfiguration {
             rabbitAdmin = rabbitAdmin,
             buildListener = buildListener,
             messageConverter = messageConverter,
-            startConsumerMinInterval = 10000,
+            startConsumerMinInterval = 1000,
             consecutiveActiveTrigger = 5,
             concurrency = buildStartConcurrency!!,
             maxConcurrency = 20
@@ -147,7 +147,7 @@ class PipelineCoreConfiguration {
             rabbitAdmin = rabbitAdmin,
             buildListener = buildListener,
             messageConverter = messageConverter,
-            startConsumerMinInterval = 10000,
+            startConsumerMinInterval = 5000,
             consecutiveActiveTrigger = 5,
             concurrency = stageConcurrency!!,
             maxConcurrency = 20
@@ -187,7 +187,7 @@ class PipelineCoreConfiguration {
             rabbitAdmin = rabbitAdmin,
             buildListener = pipelineContainerBuildListener,
             messageConverter = messageConverter,
-            startConsumerMinInterval = 10000,
+            startConsumerMinInterval = 5000,
             consecutiveActiveTrigger = 5,
             concurrency = containerConcurrency!!,
             maxConcurrency = 20
@@ -305,7 +305,7 @@ class PipelineCoreConfiguration {
             rabbitAdmin = rabbitAdmin,
             buildListener = buildListener,
             messageConverter = messageConverter,
-            startConsumerMinInterval = 15000,
+            startConsumerMinInterval = 5000,
             consecutiveActiveTrigger = 5,
             concurrency = buildFinishConcurrency!!,
             maxConcurrency = 10
@@ -346,7 +346,7 @@ class PipelineCoreConfiguration {
             rabbitAdmin = rabbitAdmin,
             buildListener = buildListener,
             messageConverter = messageConverter,
-            startConsumerMinInterval = 15000,
+            startConsumerMinInterval = 5000,
             consecutiveActiveTrigger = 5,
             concurrency = buildCancelConcurrency!!,
             maxConcurrency = 10
@@ -386,7 +386,7 @@ class PipelineCoreConfiguration {
             rabbitAdmin = rabbitAdmin,
             buildListener = createListener,
             messageConverter = messageConverter,
-            startConsumerMinInterval = 10000,
+            startConsumerMinInterval = 5000,
             consecutiveActiveTrigger = 5,
             concurrency = pipelineCreateConcurrency!!,
             maxConcurrency = 10
@@ -426,7 +426,7 @@ class PipelineCoreConfiguration {
             rabbitAdmin = rabbitAdmin,
             buildListener = deleteListener,
             messageConverter = messageConverter,
-            startConsumerMinInterval = 10000,
+            startConsumerMinInterval = 5000,
             consecutiveActiveTrigger = 5,
             concurrency = pipelineDeleteConcurrency!!,
             maxConcurrency = 10
@@ -465,7 +465,7 @@ class PipelineCoreConfiguration {
             rabbitAdmin = rabbitAdmin,
             buildListener = updateListener,
             messageConverter = messageConverter,
-            startConsumerMinInterval = 10000,
+            startConsumerMinInterval = 5000,
             consecutiveActiveTrigger = 5,
             concurrency = pipelineUpdateConcurrency!!,
             maxConcurrency = 10
@@ -481,7 +481,6 @@ class PipelineCoreConfiguration {
         pipelineSettingChangeExchange.isDelayed = true
         return pipelineSettingChangeExchange
     }
-
 
     /**
      * 流水线暂停操作队列
