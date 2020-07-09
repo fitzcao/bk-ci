@@ -26,6 +26,7 @@
 
 package com.tencent.devops.project.resources
 
+import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.web.RestResource
 import com.tencent.devops.project.api.service.ServiceProjectResource
 import com.tencent.devops.project.pojo.ProjectVO
@@ -84,5 +85,9 @@ class ServiceProjectResourceImpl @Autowired constructor(
 
     override fun get(englishName: String): Result<ProjectVO?> {
         return Result(projectService.getByEnglishName(englishName))
+    }
+
+    override fun list(limit: Int, offset: Int): Result<Page<ProjectVO>> {
+        return Result(projectService.list(limit, offset))
     }
 }
