@@ -12,6 +12,8 @@
                 <i class="right-arrow banner-arrow"></i>
                 <span class="banner-des back-home" @click="toAtomList()"> {{ $t('store.工作台') }} </span>
                 <i class="right-arrow banner-arrow"></i>
+                <span class="banner-des back-home" @click="toTemplateDetail"> {{ templateDetail.templateName }} </span>
+                <i class="right-arrow banner-arrow"></i>
                 <span class="banner-des"> {{ $t('store.上架模板') }} </span>
             </p>
             <a class="title-work" target="_blank" :href="docsLink"> {{ $t('store.模板指引') }} </a>
@@ -32,11 +34,11 @@
                                     'fail-status': entry.status === 'fail'
                                 }">
                                 <div class="card-item">
-                                    <i class="bk-icon icon-check-1" v-if="entry.status === 'success'"></i>
+                                    <i class="devops-icon icon-check-1" v-if="entry.status === 'success'"></i>
                                     <p class="step-label">{{ entry.name }}</p>
                                 </div>
                                 <div class="audit-tips" v-if="entry.code === 'approve' && entry.status === 'doing'">
-                                    <i class="bk-icon icon-info-circle"></i> {{ $t('store.由蓝盾管理员审核') }} </div>
+                                    <i class="devops-icon icon-info-circle"></i> {{ $t('store.由蓝盾管理员审核') }} </div>
                             </div>
                         </div>
                     </div>
@@ -88,7 +90,7 @@
                             </div>
                         </div>
                         <div class="toggle-btn" v-if="isOverflow" @click="toggleShow()">{{ isDropdownShow ? $t('store.收起') : $t('store.展开') }}
-                            <i :class="['bk-icon icon-angle-down', { 'icon-flip': isDropdownShow }]"></i>
+                            <i :class="['devops-icon icon-angle-down', { 'icon-flip': isDropdownShow }]"></i>
                         </div>
                         <div class="detail-form-item">
                             <div class="info-label"> {{ $t('store.发布者：') }} </div>
@@ -101,7 +103,7 @@
                     </div>
                     <div class="template-logo-box">
                         <img :src="templateDetail.logoUrl" v-if="templateDetail.logoUrl">
-                        <i class="bk-icon icon-placeholder template-logo" v-else></i>
+                        <i class="devops-icon icon-placeholder template-logo" v-else></i>
                     </div>
                 </div>
                 <div class="released-tips" v-if="isOver">
@@ -171,6 +173,15 @@
             clearTimeout(this.timer)
         },
         methods: {
+            toTemplateDetail () {
+                this.$router.push({
+                    name: 'tplOverview',
+                    params: {
+                        templateCode: this.templateDetail.templateCode
+                    }
+                })
+            },
+
             async requestTemplateDetail (atomId) {
                 this.loading.isLoading = true
 
@@ -277,7 +288,7 @@
             },
             toAtomList () {
                 this.$router.push({
-                    name: 'atomList',
+                    name: 'workList',
                     params: {
                         type: 'template'
                     }
@@ -575,7 +586,7 @@
             color: $primaryColor;
             text-align: right;
             cursor: pointer;
-            .bk-icon {
+            .devops-icon {
                 display: inline-block;
                 margin-left: 2px;
                 transition: all ease 0.2s;

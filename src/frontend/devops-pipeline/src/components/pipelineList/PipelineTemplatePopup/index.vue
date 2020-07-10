@@ -12,12 +12,12 @@
             <div v-bkloading="{ isLoading }" class="pipeline-template">
                 <header>
                     {{ $t('newlist.addPipeline') }}
-                    <i class="bk-icon icon-close" @click="toggleTemplatePopup(false)" />
+                    <i class="devops-icon icon-close" @click="toggleTemplatePopup(false)" />
                 </header>
                 <div class="temp-type-tab">
                     <span v-for="(type, index) in tempTypeList" :key="type" :class="{ &quot;active&quot;: tempTypeIndex === index }" @click="selectTempType(index)">
                         {{ type.categoryName }}
-                        <i class="bk-icon icon-refresh" v-if="type.categoryCode === 'store' && tempTypeIndex === index" @click="refreshStoreTEmp"></i>
+                        <i class="devops-icon icon-refresh" v-if="type.categoryCode === 'store' && tempTypeIndex === index" @click.stop="refreshStoreTEmp"></i>
                     </span>
                 </div>
                 <div class="template-content" :style="{ height: viewHeight }">
@@ -28,7 +28,7 @@
                                     name="searchInput"
                                     v-model="searchName"
                                     @keyup.enter="search()">
-                                <i class="bk-icon icon-search" @click="search()"></i>
+                                <i class="devops-icon icon-search" @click="search()"></i>
                             </div>
                             <div class="search-category">
                                 <span v-for="category in categoryList"
@@ -40,8 +40,9 @@
                                 </span>
                             </div>
                         </div>
-                        <h2>{{ $t('newlist.templateList') }}（{{ tempList.length }}）</h2>
-                        <ul>
+                        <h2 v-if="(tempTypeIndex === tempTypeList.length - 1)">{{ $t('newlist.templateList') }}（{{ storeTemplateNum }}）</h2>
+                        <h2 v-else>{{ $t('newlist.templateList') }}（{{ tempList.length }}）</h2>
+                        <ul @scroll.passive="scrollLoadMore">
                             <li v-for="(item, index) in tempList"
                                 :class="{
                                     'temp-item': true,
@@ -56,11 +57,11 @@
                                     v-if="(tempTypeIndex !== tempTypeList.length - 1) && item.templateType.toLowerCase() === 'constraint'"
                                     class="temp-tip"
                                 >{{ $t('newlist.store') }}</span>
-                                <i v-if="activeTempIndex === index && !item.isInstall" class="bk-icon icon-check-circle-shape"></i>
+                                <i v-if="activeTempIndex === index && !item.isInstall" class="devops-icon icon-check-circle-shape"></i>
                                 <p class="temp-logo">
                                     <logo size="50" :name="item.icon" v-if="item.icon"></logo>
                                     <img class="temp-img" :src="item.logoUrl" v-else-if="item.logoUrl">
-                                    <i class="bk-icon icon-placeholder" v-else></i>
+                                    <i class="devops-icon icon-placeholder" v-else></i>
                                 </p>
                                 <p class="temp-title" :title="item.name">
                                     {{ item.name }}
@@ -159,15 +160,20 @@
                 newPipelineName: '',
                 searchName: '',
                 templateType: 'FREEDOM',
-                curCategory: ''
+                curCategory: '',
+                loadEnd: false,
+                isLoadingMore: false,
+                storeTemplate: [],
+                storeTemplateNum: 0,
+                page: 1,
+                pageSize: 50
             }
         },
 
         computed: {
             ...mapState('soda', [
                 'pipelineTemplate',
-                'templateCategory',
-                'storeTemplate'
+                'templateCategory'
             ]),
             ...mapGetters({
                 'tagGroupList': 'pipelines/getTagGroupList'
@@ -199,16 +205,17 @@
                     list = (this.storeTemplate || []).map(item => {
                         return {
                             ...item,
-                            isInstall: !Object.keys(pipelineTemplate || []).includes(item.code),
+                            isInstall: !item.installed,
                             isFlag: item.flag,
                             stages: (pipelineTemplate[item.code] && pipelineTemplate[item.code].stages) || []
                         }
                     })
                 } else {
-                    Object.keys(pipelineTemplate || []).map(item => {
-                        if ((type === 'custom' && !pipelineTemplate[item].category.length) || pipelineTemplate[item].category.includes(type)) {
+                    Object.keys(pipelineTemplate || {}).map(item => {
+                        const curItem = pipelineTemplate[item] || {}
+                        if ((type === 'custom' && ['PUBLIC', 'CUSTOMIZE'].includes(curItem.templateType)) || curItem.category.includes(type)) {
                             list.push({
-                                ...pipelineTemplate[item],
+                                ...curItem,
                                 isInstall: false,
                                 isFlag: true
                             })
@@ -276,9 +283,16 @@
                 'requestInstallTemplate'
             ]),
 
+            scrollLoadMore (event) {
+                if (this.tempTypeIndex !== this.tempTypeList.length - 1) return
+                const target = event.target
+                const bottomDis = target.scrollHeight - target.clientHeight - target.scrollTop
+                if (bottomDis <= 500 && !this.loadEnd && !this.isLoadingMore) this.requestMarkTemplates()
+            },
+
             search () {
                 this.selectTemp(0)
-                this.requestMarkTemplates(this.searchName, this.curCategory)
+                this.requestMarkTemplates(true)
             },
             selectTemp (index) {
                 const target = this.tempList.length && this.tempList[index]
@@ -293,9 +307,8 @@
                 }
                 this.isLoading = true
                 this.requestInstallTemplate(postData).then((res) => {
-                    this.requestPipelineTemplate({
-                        projectId: this.projectId
-                    })
+                    const currentStoreItem = this.storeTemplate.find(x => x.code === temp.code)
+                    currentStoreItem.installed = true
                 }).catch((err) => {
                     this.$showTips({ message: err.message || err, theme: 'error' })
                 }).finally(() => {
@@ -303,7 +316,7 @@
                 })
             },
             selectTempType (index) {
-                if (index === this.tempTypeList.length - 1 && !this.storeTemplate) {
+                if (index === this.tempTypeList.length - 1 && this.storeTemplate.length <= 0) {
                     this.requestMarkTemplates()
                 }
                 setTimeout(() => {
@@ -319,7 +332,7 @@
                 this.requestPipelineTemplate({
                     projectId: this.projectId
                 })
-                this.requestMarkTemplates()
+                this.requestMarkTemplates(true)
             },
             selectCategory (category) {
                 if (this.curCategory === category) {
@@ -327,7 +340,7 @@
                 } else {
                     this.curCategory = category
                 }
-                this.requestMarkTemplates(this.searchName, this.curCategory)
+                this.requestMarkTemplates(true)
             },
             toggleTemplatePopup (isShow) {
                 this.togglePopup(isShow)
@@ -339,10 +352,27 @@
             togglePreview (showPreview) {
                 this.showPreview = showPreview
             },
-            requestMarkTemplates (name, category) {
-                this.requestStoreTemplate({
-                    templateName: name || undefined,
-                    category: category || undefined
+            requestMarkTemplates (isReload) {
+                this.isLoadingMore = true
+                if (isReload) {
+                    this.page = 1
+                    this.storeTemplate = []
+                }
+                const param = {
+                    page: this.page,
+                    pageSize: this.pageSize,
+                    templateName: this.searchName,
+                    categoryCode: this.curCategory,
+                    projectCode: this.projectId
+                }
+                this.requestStoreTemplate(param).then((res) => {
+                    this.page++
+                    const data = res.data || {}
+                    this.storeTemplateNum = data.count || 0
+                    this.storeTemplate.push(...data.records)
+                    this.loadEnd = data.count <= this.storeTemplate.length
+                }).catch(err => this.$bkMessage({ message: (err.message || err), theme: 'error' })).finally(() => {
+                    this.isLoadingMore = false
                 })
             },
             async createNewPipeline () {

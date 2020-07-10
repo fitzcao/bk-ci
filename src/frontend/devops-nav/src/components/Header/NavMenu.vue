@@ -19,7 +19,7 @@
             <div
                 v-show="show"
                 class="nav-menu-layout"
-                :class="{ 'showTopPrompt': showExplorerTips === 'true' && isShowPreviewTips && !chromeExplorer }"
+                :class="{ 'showTopPrompt': showAnnounce }"
             >
                 <div
                     class="nav-menu-layout-content"
@@ -95,18 +95,12 @@
     })
     export default class NavMenu extends Vue {
         @Getter('getCollectServices') collectServices
+        @Getter showAnnounce
         @State services
         @State currentPage
-        @State isShowPreviewTips
         @Action toggleServiceCollect
         show: boolean = false
         showNewServiveTips: boolean = false
-        showExplorerTips: string = localStorage.getItem('showExplorerTips')
-
-        get chromeExplorer (): boolean {
-            const explorer = window.navigator.userAgent
-            return explorer.indexOf('Chrome') >= 0 && explorer.indexOf('QQ') === -1
-        }
 
         get newServiceList (): object[] {
             const newServiceList = localStorage.getItem('newServiceList')
@@ -226,8 +220,7 @@
             transition: 0.2s all linear;
         }
         > i {
-            font-size: 12px;
-            margin-left: 5px;
+            font-size: 22px;
             vertical-align: -2px;
             display: inline-block;
         }

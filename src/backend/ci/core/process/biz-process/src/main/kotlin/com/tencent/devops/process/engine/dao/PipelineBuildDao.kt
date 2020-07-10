@@ -34,6 +34,10 @@ import com.tencent.devops.model.process.Tables.T_PIPELINE_BUILD_HISTORY
 import com.tencent.devops.model.process.tables.records.TPipelineBuildHistoryRecord
 import com.tencent.devops.process.engine.pojo.BuildInfo
 import com.tencent.devops.common.api.pojo.ErrorType
+import com.tencent.devops.common.api.util.JsonUtil
+import com.tencent.devops.common.service.utils.CommonUtils
+import com.tencent.devops.process.pojo.BuildStageStatus
+import com.tencent.devops.process.utils.PIPELINE_MESSAGE_STRING_LENGTH_MAX
 import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.DatePart
@@ -241,10 +245,11 @@ class PipelineBuildDao {
         }
     }
 
-    fun getOneQueueBuild(dslContext: DSLContext, pipelineId: String): TPipelineBuildHistoryRecord? {
+    fun getOneQueueBuild(dslContext: DSLContext, projectId: String, pipelineId: String): TPipelineBuildHistoryRecord? {
         return with(T_PIPELINE_BUILD_HISTORY) {
             val select = dslContext.selectFrom(this)
-                .where(PIPELINE_ID.eq(pipelineId))
+                .where(PROJECT_ID.eq(projectId))
+                .and(PIPELINE_ID.eq(pipelineId))
                 .and(STATUS.eq(BuildStatus.QUEUE.ordinal))
                 .orderBy(BUILD_NUM.asc()).limit(1)
             select.fetchAny()
@@ -292,7 +297,7 @@ class PipelineBuildDao {
             if (errorType != null) {
                 baseQuery = baseQuery.set(ERROR_TYPE, errorType.ordinal)
                 baseQuery = baseQuery.set(ERROR_CODE, errorCode)
-                baseQuery = baseQuery.set(ERROR_MSG, errorMsg)
+                baseQuery = baseQuery.set(ERROR_MSG, CommonUtils.interceptStringInLength(errorMsg, PIPELINE_MESSAGE_STRING_LENGTH_MAX))
             }
             baseQuery.where(BUILD_ID.eq(buildId))
                 .execute()
@@ -302,10 +307,13 @@ class PipelineBuildDao {
     /**
      * 取最近一次构建的参数
      */
-    fun getLatestBuild(dslContext: DSLContext, pipelineId: String): TPipelineBuildHistoryRecord? {
+    fun getLatestBuild(dslContext: DSLContext, projectId: String, pipelineId: String): TPipelineBuildHistoryRecord? {
         return with(T_PIPELINE_BUILD_HISTORY) {
             val select = dslContext.selectFrom(this)
-                .where(PIPELINE_ID.eq(pipelineId))
+                .where(
+                        PIPELINE_ID.eq(pipelineId),
+                        PROJECT_ID.eq(projectId)
+                )
                 .orderBy(BUILD_NUM.desc()).limit(1)
             select.fetchAny()
         }
@@ -314,11 +322,12 @@ class PipelineBuildDao {
     /**
      * 取最近一次完成的构建
      */
-    fun getLatestFinishedBuild(dslContext: DSLContext, pipelineId: String): TPipelineBuildHistoryRecord? {
+    fun getLatestFinishedBuild(dslContext: DSLContext, projectId: String, pipelineId: String): TPipelineBuildHistoryRecord? {
         return with(T_PIPELINE_BUILD_HISTORY) {
             val select = dslContext.selectFrom(this)
                 .where(
                     PIPELINE_ID.eq(pipelineId),
+                    PROJECT_ID.eq(projectId),
                     STATUS.notIn(
                         mutableListOf(
                             3, // 3 运行中
@@ -327,6 +336,38 @@ class PipelineBuildDao {
                     )
                 )
                 .orderBy(BUILD_NUM.desc()).limit(1)
+            select.fetchAny()
+        }
+    }
+
+    /**
+     * 取最近一次成功的构建
+     */
+    fun getLatestFailedBuild(dslContext: DSLContext, projectId: String, pipelineId: String): TPipelineBuildHistoryRecord? {
+        return with(T_PIPELINE_BUILD_HISTORY) {
+            val select = dslContext.selectFrom(this)
+                    .where(
+                            PIPELINE_ID.eq(pipelineId),
+                            PROJECT_ID.eq(projectId),
+                            STATUS.eq(1)
+                    )
+                    .orderBy(BUILD_NUM.desc()).limit(1)
+            select.fetchAny()
+        }
+    }
+
+    /**
+     * 取最近一次失败的构建
+     */
+    fun getLatestSuccessedBuild(dslContext: DSLContext, projectId: String, pipelineId: String): TPipelineBuildHistoryRecord? {
+        return with(T_PIPELINE_BUILD_HISTORY) {
+            val select = dslContext.selectFrom(this)
+                    .where(
+                            PIPELINE_ID.eq(pipelineId),
+                            PROJECT_ID.eq(projectId),
+                            STATUS.eq(0)
+                    )
+                    .orderBy(BUILD_NUM.desc()).limit(1)
             select.fetchAny()
         }
     }
@@ -345,6 +386,18 @@ class PipelineBuildDao {
         } == 1
     }
 
+    fun updateStageCancelStatus(
+        dslContext: DSLContext,
+        buildId: String
+    ): Boolean {
+        return with(T_PIPELINE_BUILD_HISTORY) {
+            dslContext.update(this)
+                .set(END_TIME, LocalDateTime.now())
+                .where(BUILD_ID.eq(buildId)).and(STATUS.eq(BuildStatus.STAGE_SUCCESS.ordinal))
+                .execute()
+        } == 1
+    }
+
     fun convert(t: TPipelineBuildHistoryRecord?): BuildInfo? {
         return if (t == null) {
             null
@@ -357,6 +410,7 @@ class PipelineBuildDao {
                 buildNum = t.buildNum,
                 trigger = t.trigger,
                 status = BuildStatus.values()[t.status],
+                queueTime = t.queueTime?.timestampmilli() ?: 0L,
                 startUser = t.startUser,
                 startTime = t.startTime?.timestampmilli() ?: 0L,
                 endTime = t.endTime?.timestampmilli() ?: 0L,
@@ -709,6 +763,19 @@ class PipelineBuildDao {
         with(T_PIPELINE_BUILD_HISTORY) {
             dslContext.update(this)
                 .set(MATERIAL, material)
+                .where(BUILD_ID.eq(buildId))
+                .execute()
+        }
+    }
+
+    fun updateBuildStageStatus(
+        dslContext: DSLContext,
+        buildId: String,
+        stageStatus: List<BuildStageStatus>
+    ): Int {
+        return with(T_PIPELINE_BUILD_HISTORY) {
+            dslContext.update(this)
+                .set(STAGE_STATUS, JsonUtil.toJson(stageStatus))
                 .where(BUILD_ID.eq(buildId))
                 .execute()
         }

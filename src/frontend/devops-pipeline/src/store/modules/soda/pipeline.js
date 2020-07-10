@@ -34,7 +34,6 @@ import {
     PIPELINE_TEMPLATE_MUTATION,
     STORE_TEMPLATE_MUTATION,
     TEMPLATE_MUTATION,
-    PROJECT_GROUP_USERS_MUTATION,
     PIPELINE_SETTING_MUTATION,
     UPDATE_PIPELINE_SETTING_MUNTATION,
     RESET_PIPELINE_SETTING_MUNTATION,
@@ -59,8 +58,7 @@ export const state = {
     pipelineSetting: {},
     ruleList: [],
     templateRuleList: [],
-    qualityAtom: [],
-    projectGroupAndUsers: []
+    qualityAtom: []
 }
 
 export const mutations = {
@@ -129,11 +127,6 @@ export const mutations = {
         })
         return state
     },
-    [PROJECT_GROUP_USERS_MUTATION]: (state, { projectGroupAndUsers }) => {
-        return Object.assign(state, {
-            projectGroupAndUsers
-        })
-    },
     [UPDATE_PIPELINE_SETTING_MUNTATION]: (state, { container, param }) => {
         Object.assign(container, param)
         return state
@@ -190,16 +183,8 @@ export const actions = {
         }
     },
     // 获取RD Store模板
-    requestStoreTemplate: async ({ commit }, { templateName, category }) => {
-        const params = Object.assign({ page: 1, pageSize: 1000 }, { templateName: templateName, categoryCode: category })
-        try {
-            const response = await request.get(`/${STORE_API_URL_PREFIX}/user/market/template/list`, { params })
-            commit(STORE_TEMPLATE_MUTATION, {
-                storeTemplate: response.data.records
-            })
-        } catch (e) {
-            rootCommit(commit, FETCH_ERROR, e)
-        }
+    requestStoreTemplate: async ({ commit }, params) => {
+        return request.get(`/${STORE_API_URL_PREFIX}/user/market/template/list`, { params })
     },
     requestPipelineSetting: async ({ commit }, { projectId, pipelineId }) => {
         try {
@@ -274,20 +259,6 @@ export const actions = {
 
             commit(INTERCEPT_TEMPLATE_MUTATION, {
                 templateRuleList: response.data
-            })
-        } catch (e) {
-            if (e.code === 403) {
-                e.message = ''
-            }
-            rootCommit(commit, FETCH_ERROR, e)
-        }
-    },
-    requestProjectGroupAndUsers: async ({ commit }, { projectId }) => {
-        try {
-            const response = await request.get(`/experience/api/user/groups/${projectId}/projectGroupAndUsers`)
-
-            commit(PROJECT_GROUP_USERS_MUTATION, {
-                projectGroupAndUsers: response.data
             })
         } catch (e) {
             if (e.code === 403) {

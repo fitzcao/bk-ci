@@ -1,7 +1,7 @@
 <template>
     <div
         class="devops-iframe-content"
-        :class="{ 'showTopPrompt': showExplorerTips === 'true' && isShowPreviewTips && !chromeExplorer }"
+        :class="{ 'showTopPrompt': showAnnounce }"
     >
         <div
             v-if="isAnyPopupShow"
@@ -28,7 +28,8 @@
     import { Component, Watch } from 'vue-property-decorator'
     import eventBus from '../utils/eventBus'
     import { urlJoin, queryStringify, getServiceAliasByPath } from '../utils/util'
-    import { State } from 'vuex-class'
+    import { State, Getter } from 'vuex-class'
+    import * as cookie from 'js-cookie'
 
     Component.registerHooks([
         'beforeRouteEnter',
@@ -42,7 +43,6 @@
         initPath: string = ''
         src: string = ''
         leaving: boolean = false
-        showExplorerTips: string = localStorage.getItem('showExplorerTips')
 
         $refs: {
             iframeEle: HTMLIFrameElement
@@ -51,9 +51,9 @@
         @State projectList
         @State currentPage
         @State isAnyPopupShow
-        @State isShowPreviewTips
         @State user
         @State headerConfig
+        @Getter showAnnounce
 
         created () {
             this.init()
@@ -96,11 +96,6 @@
             return this.$route.name === 'job'
         }
 
-        get chromeExplorer () :boolean {
-            const explorer = window.navigator.userAgent
-            return explorer.indexOf('Chrome') >= 0 && explorer.indexOf('QQ') === -1
-        }
-
         backHome () {
             if (this.needLoading) {
                 this.isLoading = true
@@ -135,7 +130,7 @@
                 const reg = /^\/?\w+\/(\S*)\/?$/
                 const initPath = path.match(reg) ? path.replace(reg, '$1') : ''
                 const query = Object.assign({
-                    project_code: localStorage.getItem('projectId')
+                    project_code: cookie.get(X_DEVOPS_PROJECT_ID)
                 }, this.$route.query)
 
                 this.src = urlJoin(this.currentPage.iframe_url, initPath) + '?' + queryStringify(query) + hash

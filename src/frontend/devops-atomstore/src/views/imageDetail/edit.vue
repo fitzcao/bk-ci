@@ -6,10 +6,24 @@
 
         <main class="edit-main">
             <bk-form ref="editForm" class="edit-image" label-width="125" :model="form">
-                <bk-form-item class="wt660" :label="$t('store.镜像名称')" :required="true" property="imageName" :rules="[requireRule]" ref="imageName">
+                <bk-form-item class="wt660"
+                    :label="$t('store.镜像名称')"
+                    :required="true"
+                    property="imageName"
+                    :rules="[requireRule]"
+                    ref="imageName"
+                    error-display-type="normal"
+                >
                     <bk-input v-model="form.imageName" :placeholder="$t('store.请输入镜像名称')"></bk-input>
                 </bk-form-item>
-                <bk-form-item class="wt660" :label="$t('store.分类')" :required="true" property="classifyCode" :rules="[requireRule]" ref="classifyCode">
+                <bk-form-item class="wt660"
+                    :label="$t('store.分类')"
+                    :required="true"
+                    property="classifyCode"
+                    :rules="[requireRule]"
+                    ref="classifyCode"
+                    error-display-type="normal"
+                >
                     <bk-select v-model="form.classifyCode" searchable>
                         <bk-option v-for="(option, index) in classifys"
                             :key="index"
@@ -32,7 +46,13 @@
                         </bk-option>
                     </bk-select>
                 </bk-form-item>
-                <bk-form-item :label="$t('store.范畴')" property="category" :required="true" :rules="[requireRule]" ref="category">
+                <bk-form-item :label="$t('store.范畴')"
+                    property="category"
+                    :required="true"
+                    :rules="[requireRule]"
+                    ref="category"
+                    error-display-type="normal"
+                >
                     <bk-select v-model="form.category" searchable>
                         <bk-option v-for="(option, index) in categoryList"
                             :key="index"
@@ -43,7 +63,13 @@
                         </bk-option>
                     </bk-select>
                 </bk-form-item>
-                <bk-form-item :label="$t('store.简介')" property="summary" :required="true" :rules="[requireRule]" ref="summary">
+                <bk-form-item :label="$t('store.简介')"
+                    property="summary"
+                    :required="true"
+                    :rules="[requireRule]"
+                    ref="summary"
+                    error-display-type="normal"
+                >
                     <bk-input v-model="form.summary" :placeholder="$t('store.请输入简介')"></bk-input>
                 </bk-form-item>
                 <bk-form-item :label="$t('store.描述')" property="description">
@@ -58,13 +84,19 @@
                     />
                 </bk-form-item>
                 <bk-form-item label="Dockerfile" property="dockerFileContent" ref="dockerFileContent">
-                    <section class="dockerfile" @click="freshCodeMirror"></section>
+                    <code-section :code="form.dockerFileContent" :cursor-blink-rate="530" :read-only="false" ref="codeEditor" />
                 </bk-form-item>
                 <div class="version-msg">
                     <p class="form-title"> {{ $t('store.版本信息') }} </p>
                     <hr class="cut-line">
                 </div>
-                <bk-form-item :label="$t('store.发布者')" :required="true" property="publisher" :rules="[requireRule]" ref="publisher">
+                <bk-form-item :label="$t('store.发布者')"
+                    :required="true"
+                    property="publisher"
+                    :rules="[requireRule]"
+                    ref="publisher"
+                    error-display-type="normal"
+                >
                     <bk-input v-model="form.publisher" :placeholder="$t('store.请输入发布者')"></bk-input>
                 </bk-form-item>
                 <bk-form-item>
@@ -80,15 +112,12 @@
     import { mapActions } from 'vuex'
     import { toolbars } from '@/utils/editor-options'
     import selectLogo from '@/components/common/selectLogo'
-
-    import CodeMirror from 'codemirror'
-    import 'codemirror/mode/yaml/yaml'
-    import 'codemirror/lib/codemirror.css'
-    import 'codemirror/theme/3024-night.css'
+    import codeSection from '@/components/common/detailTab/codeSection'
 
     export default {
         components: {
-            selectLogo
+            selectLogo,
+            codeSection
         },
 
         data () {
@@ -103,17 +132,6 @@
                 classifys: [],
                 labelList: [],
                 categoryList: [],
-                codeMirrorCon: {
-                    lineNumbers: true,
-                    height: '400px',
-                    tabMode: 'indent',
-                    mode: 'yaml',
-                    theme: '3024-night',
-                    cursorHeight: 0.85,
-                    autoRefresh: true,
-                    autofocus: true
-                },
-                codeEditor: {},
                 toolbars
             }
         },
@@ -130,11 +148,6 @@
                 'requestImageCategorys',
                 'requestUpdateImageInfo'
             ]),
-
-            freshCodeMirror () {
-                this.codeEditor.refresh()
-                this.codeEditor.focus()
-            },
 
             chooseImageName (option) {
                 this.form.classifyName = option.classifyName
@@ -162,10 +175,6 @@
                     this.categoryList = categorys
                 }).catch((err) => this.$bkMessage({ message: err.message || err, theme: 'error' })).finally(() => {
                     this.isLoading = false
-                    const ele = document.querySelector('.dockerfile')
-                    this.codeEditor = CodeMirror(ele, this.codeMirrorCon)
-                    this.codeEditor.setValue(this.form.dockerFileContent || '')
-                    this.codeEditor.refresh()
                 })
             },
 
@@ -177,7 +186,7 @@
                         throw err
                     }
                     this.isLoading = true
-                    this.form.dockerFileContent = this.codeEditor.getValue()
+                    this.form.dockerFileContent = this.$refs.codeEditor.getValue()
                     const postData = {
                         imageCode: this.form.imageCode,
                         data: this.form

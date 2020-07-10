@@ -13,7 +13,6 @@ import {
     BACKEND_API_URL_PREFIX,
     PROCESS_API_URL_PREFIX,
     PROJECT_API_URL_PREFIX,
-    SUPPORT_API_URL_PREFIX,
     EMPTY_PROJECT,
     RESET_NEW_PROJECT,
     SET_POPUP_SHOW,
@@ -22,12 +21,13 @@ import {
     TOGGLE_MODULE_LOADING,
     UPDATE_CURRENT_PAGE,
     SET_SERVICES,
-    TOGGLE_PERMISSION_DIALOG
+    TOGGLE_PERMISSION_DIALOG,
+    SET_CURRENT_NOTICE
 } from './constants'
 
 const actions: ActionTree<RootState, any> = {
     togglePermissionDialog ({ commit }: ActionContext<RootState, any>, visible: boolean) {
-        commit(TOGGLE_PERMISSION_DIALOG, visible)  
+        commit(TOGGLE_PERMISSION_DIALOG, visible)
     },
     updateCurrentPage ({ commit }: ActionContext<RootState, any>, page: object) {
         commit(UPDATE_CURRENT_PAGE, page)
@@ -118,7 +118,10 @@ const actions: ActionTree<RootState, any> = {
         commit(CLOSE_PREVIEW_TIPS)
     },
     getAnnouncement () {
-        return Request.get(`${SUPPORT_API_URL_PREFIX}/user/notice/valid`)
+        return Request.get(`${PROJECT_API_URL_PREFIX}/user/notice/valid`)
+    },
+    setAnnouncement ({ commit }, payload) {
+        commit(SET_CURRENT_NOTICE, payload)
     }
 }
 

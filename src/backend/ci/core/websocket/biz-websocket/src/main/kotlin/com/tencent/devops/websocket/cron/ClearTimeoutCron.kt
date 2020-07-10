@@ -29,6 +29,7 @@ package com.tencent.devops.websocket.cron
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.common.websocket.utils.RedisUtlis
+import com.tencent.devops.common.websocket.utils.RedisUtlis.cleanPageSessionByPage
 import com.tencent.devops.websocket.keys.WebsocketKeys
 import com.tencent.devops.websocket.servcie.WebsocketService
 import org.slf4j.LoggerFactory
@@ -57,12 +58,12 @@ class ClearTimeoutCron(
 
     private fun longSessionLog() {
         val longSessionList = websocketService.getLongSessionPage()
+        logger.warn("this page sessionSize more ${websocketService.getMaxSession()}, $longSessionList")
         longSessionList.forEach {
-            logger.warn("this page[$it] sessionSize more 20")
+            cleanPageSessionByPage(redisOperation, it)
+            logger.warn("this page[$it] outSize, delete page session")
         }
-        if (longSessionList.size > 20) {
-            websocketService.clearLongSessionPage()
-        }
+        websocketService.clearLongSessionPage()
     }
 
     private fun clearTimeoutSession() {
@@ -86,11 +87,11 @@ class ClearTimeoutCron(
                                 val sessionPage = RedisUtlis.getPageFromSessionPageBySession(redisOperation, sessionId)
                                 RedisUtlis.cleanSessionPageBySessionId(redisOperation, sessionId)
                                 if (sessionPage != null) {
-                                    RedisUtlis.cleanPageSessionBySessionId(redisOperation, sessionId, sessionPage)
+                                    RedisUtlis.cleanPageSessionBySessionId(redisOperation, sessionPage, sessionId)
+                                    RedisUtlis.cleanUserSessionBySessionId(redisOperation, userId, sessionId)
+                                    logger.info("[clearTimeOutSession] sessionId:$sessionId,loadPage:$sessionPage,userId:$userId")
                                 }
-                                RedisUtlis.cleanUserSessionBySessionId(redisOperation, userId, sessionId)
                                 websocketService.removeCacheSession(sessionId)
-                                logger.info("[clearTimeOutSession] sessionId:$sessionId,loadPage:$sessionPage,userId:$userId")
                             } else {
                                 newSessionList = if (newSessionList == null) {
                                     it

@@ -1,8 +1,8 @@
 <template>
     <div class="select-input" v-bk-clickoutside="handleBlur">
         <input class="bk-form-input" v-bind="restProps" v-model="displayName" :disabled="disabled || loading" ref="inputArea" :title="value" autocomplete="off" @input="handleInput" @focus="handleFocus" @keypress.enter.prevent="handleEnterOption" @keydown.up.prevent="handleKeyup" @keydown.down.prevent="handleKeydown" @keydown.tab.prevent="handleBlur" />
-        <i v-if="loading" class="bk-icon icon-circle-2-1 option-fetching-icon spin-icon" />
-        <i v-else-if="!disabled && value" class="bk-icon icon-close-circle-shape option-fetching-icon" @click.stop="clearValue" />
+        <i v-if="loading" class="devops-icon icon-circle-2-1 option-fetching-icon spin-icon" />
+        <i v-else-if="!disabled && value" class="devops-icon icon-close-circle-shape option-fetching-icon" @click.stop="clearValue" />
         <div class="dropbox-container" v-show="hasOption && optionListVisible && !loading" ref="dropMenu">
             <ul>
                 <template v-if="hasGroup">
@@ -26,6 +26,14 @@
                         {{ item.name }}
                     </li>
                 </template>
+                <template v-if="mergedOptionsConf.hasAddItem">
+                    <div class="bk-select-extension">
+                        <a :href="addItemUrl" target="_blank">
+                            <i class="bk-icon icon-plus-circle" />
+                            {{ mergedOptionsConf.itemText }}
+                        </a>
+                    </div>
+                </template>
             </ul>
         </div>
     </div>
@@ -34,21 +42,14 @@
 <script>
     import mixins from '../mixins'
     import scrollMixins from './scrollMixins'
+    import selectorMixins from '../selectorMixins'
     import { debounce, isObject } from '@/utils/util'
 
     export default {
         name: 'select-input',
-        mixins: [mixins, scrollMixins],
+        mixins: [mixins, scrollMixins, selectorMixins],
         props: {
             isLoading: Boolean,
-            options: {
-                type: Array,
-                default: []
-            },
-            optionsConf: {
-                type: Object,
-                default: () => ({})
-            },
             preFilter: {
                 type: Object,
                 default: () => ({})
@@ -66,41 +67,12 @@
             }
         },
         computed: {
-            mergedOptionsConf () {
-                return Object.assign({}, {
-                    url: '',
-                    paramId: 'id',
-                    paramName: 'name'
-                }, this.optionsConf)
-            },
             restProps () {
                 const { options, optionsConf, atomvalue, container, ...restProps } = this.$props
                 return restProps
             },
-            hasUrl () {
-                return this.mergedOptionsConf && this.mergedOptionsConf.url && typeof this.mergedOptionsConf.url === 'string'
-            },
             hasGroup () {
                 return this.mergedOptionsConf && this.mergedOptionsConf.hasGroup
-            },
-            urlParamKeys () {
-                if (this.hasUrl) {
-                    const paramKey = this.mergedOptionsConf.url.match(/\{(.*?)\}/g)
-                    return paramKey ? paramKey.map(key => key.replace(/\{(.*?)\}/, '$1')) : []
-                }
-                return []
-            },
-            queryParams () {
-                const { atomValue = {}, $route: { params = {} } } = this
-                return {
-                    ...params,
-                    ...atomValue
-                }
-            },
-            isLackParam () {
-                return this.urlParamKeys.some(key => {
-                    return this.queryParams.hasOwnProperty(key) && (typeof this.queryParams[key] === 'undefined' || this.queryParams[key] === null || this.queryParams[key] === '')
-                })
             },
             filteredList () {
                 const { displayName, value, optionList } = this
@@ -145,11 +117,10 @@
             }
         },
         watch: {
-            atomValue: {
-                handler: function (newAtomValues, oldAtomValues) {
-                    if (this.urlParamKeys.some(key => newAtomValues[key] !== oldAtomValues[key])) {
-                        this.debounceGetOptionList()
-                    }
+            queryParams (newQueryParams, oldQueryParams) {
+                if (this.urlParamKeys.some(key => newQueryParams[key] !== oldQueryParams[key])) {
+                    this.debounceGetOptionList()
+                    this.handleChange(this.name, '')
                 }
             },
             options (newOptions) {
@@ -183,11 +154,6 @@
             }
         },
         methods: {
-            urlParse (originUrl, query) {
-                /* eslint-disable */
-                return new Function('ctx', `return '${originUrl.replace(/\{(.*?)\}/g, '\'\+ ctx.$1 \+\'')}'`)(query)
-                /* eslint-enable */
-            },
             handleInput (e) {
                 const { name, value } = e.target
                 this.optionListVisible = true
@@ -296,6 +262,7 @@
                     }
                 } catch (e) {
                     console.error(e)
+                    this.displayName = this.value
                 } finally {
                     this.loading = false
                 }
@@ -378,6 +345,9 @@
                     &[disabled] {
                         color: $fontLigtherColor;
                     }
+                }
+                .bk-select-extension a {
+                    color: #63656e;
                 }
             }
         }

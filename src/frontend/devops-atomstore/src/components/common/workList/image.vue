@@ -8,8 +8,8 @@
             </div>
             <section :class="[{ 'control-active': isInputFocus }, 'g-input-search', 'list-input']">
                 <input class="g-input-border" type="text" :placeholder="$t('store.请输入关键字搜索')" v-model="searchName" @focus="isInputFocus = true" @blur="isInputFocus = false" @keyup.enter="search" />
-                <i class="bk-icon icon-search" v-if="!searchName"></i>
-                <i class="bk-icon icon-close-circle-shape clear-icon" v-else @click="clearSearch"></i>
+                <i class="devops-icon icon-search" v-if="!searchName"></i>
+                <i class="devops-icon icon-close-circle-shape clear-icon" v-else @click="clearSearch"></i>
             </section>
         </div>
         <bk-table style="margin-top: 15px;" :empty-text="$t('store.暂时没有镜像')"
@@ -58,7 +58,7 @@
                     <span class="atom-status-icon success" v-if="props.row.imageStatus === 'RELEASED'"></span>
                     <span class="atom-status-icon fail" v-if="props.row.imageStatus === 'GROUNDING_SUSPENSION'"></span>
                     <span class="atom-status-icon obtained" v-if="props.row.imageStatus === 'AUDIT_REJECT' || props.row.imageStatus === 'UNDERCARRIAGED'"></span>
-                    <span class="atom-status-icon bk-icon icon-initialize" v-if="props.row.imageStatus === 'INIT'"></span>
+                    <span class="atom-status-icon devops-icon icon-initialize" v-if="props.row.imageStatus === 'INIT'"></span>
                     <span>{{ $t(imageStatusList[props.row.imageStatus]) }}</span>
                 </template>
             </bk-table-column>
@@ -75,7 +75,7 @@
                         @click="$router.push({ name: 'editImage', params: { imageId: props.row.imageId } })"> {{ $t('store.升级') }} </span>
                     <span class="shelf-btn"
                         v-if="props.row.imageStatus === 'RELEASED' && !props.row.publicFlag"
-                        @click="$router.push({ name: 'install', query: { code: props.row.imageCode, type: 'image', from: 'atomList' } })"> {{ $t('store.安装') }} </span>
+                        @click="$router.push({ name: 'install', query: { code: props.row.imageCode, type: 'image', from: 'workList' } })"> {{ $t('store.安装') }} </span>
                     <span class="schedule-btn"
                         v-if="['AUDITING', 'COMMITTING', 'CHECKING', 'CHECK_FAIL', 'UNDERCARRIAGING', 'TESTING'].includes(props.row.imageStatus)"
                         @click="$router.push({ name: 'imageProgress', params: { imageId: props.row.imageId } })"> {{ $t('store.进度') }} </span>
@@ -94,18 +94,36 @@
             :width="relateImageData.width">
             <template slot="content">
                 <bk-form ref="relateForm" class="relate-form" label-width="100" :model="relateImageData.form" v-bkloading="{ isLoading: relateImageData.isLoading }">
-                    <bk-form-item :label="$t('store.镜像名称')" :required="true" property="imageName" :desc="$t('store.镜像在研发商店中的别名')" :rules="[requireRule]">
-                        <bk-input v-model="relateImageData.form.imageName" :placeholder="$t('store.请输入镜像名称')"></bk-input>
+                    <bk-form-item :label="$t('store.镜像名称')"
+                        :required="true"
+                        property="imageName"
+                        :desc="$t('store.镜像在研发商店中的别名')"
+                        :rules="[requireRule, nameRule, numMax]"
+                        error-display-type="normal"
+                    >
+                        <bk-input v-model="relateImageData.form.imageName" :placeholder="$t('store.请输入镜像名称，不超过20个字符')"></bk-input>
                     </bk-form-item>
-                    <bk-form-item :label="$t('store.镜像标识')" :required="true" property="imageCode" :desc="$t('store.镜像英文名，为当前镜像在研发商店中的唯一标识')" :rules="[requireRule, alpRule]">
-                        <bk-input v-model="relateImageData.form.imageCode" :placeholder="$t('store.请输入镜像标识')"></bk-input>
+                    <bk-form-item :label="$t('store.镜像标识')"
+                        :required="true"
+                        property="imageCode"
+                        :desc="$t('store.镜像英文名，为当前镜像在研发商店中的唯一标识')"
+                        :rules="[requireRule, alpRule, numMax]"
+                        error-display-type="normal"
+                    >
+                        <bk-input v-model="relateImageData.form.imageCode" :placeholder="$t('store.请输入镜像标识，不超过20个字符')"></bk-input>
                     </bk-form-item>
                     <bk-form-item :label="$t('store.镜像源')" :required="true" property="imageSourceType" class="h32" :rules="[requireRule]">
                         <bk-radio-group v-model="relateImageData.form.imageSourceType" class="mt6">
                             <bk-radio value="THIRD"> {{ $t('store.第三方源') }} </bk-radio>
                         </bk-radio-group>
                     </bk-form-item>
-                    <bk-form-item :label="$t('store.调试项目')" :required="true" property="projectCode" :desc="$t('store.在发布过程中，可以在该项目下调试镜像')" :rules="[requireRule]">
+                    <bk-form-item :label="$t('store.调试项目')"
+                        :required="true"
+                        property="projectCode"
+                        :desc="$t('store.在发布过程中，可以在该项目下调试镜像')"
+                        :rules="[requireRule]"
+                        error-display-type="normal"
+                    >
                         <bk-select v-model="relateImageData.form.projectCode" searchable :placeholder="$t('store.请选择项目')" @change="toggleProjectList">
                             <bk-option v-for="option in projectList"
                                 :key="option.project_code"
@@ -221,6 +239,16 @@
                 alpRule: {
                     validator: (val) => (/^[a-zA-Z0-9-_]+$/.test(val)),
                     message: this.$t('store.标识需要是大小写字母、数字、中划线或下划线'),
+                    trigger: 'blur'
+                },
+                nameRule: {
+                    validator: (val) => (/^[\u4e00-\u9fa5a-zA-Z0-9-]+$/.test(val)),
+                    message: this.$t('store.由汉字、英文字母、数字、连字符(-)组成，长度小于20个字符'),
+                    trigger: 'blur'
+                },
+                numMax: {
+                    validator: (val = '') => (val.length <= 20),
+                    message: this.$t('store.字段不超过20个字符'),
                     trigger: 'blur'
                 }
             }

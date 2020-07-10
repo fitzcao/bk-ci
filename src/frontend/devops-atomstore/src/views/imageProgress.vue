@@ -7,7 +7,9 @@
                 <i class="right-arrow banner-arrow"></i>
                 <span class="banner-des back-home" @click="toImageList"> {{ $t('store.工作台') }} </span>
                 <i class="right-arrow banner-arrow"></i>
-                <span class="banner-des">{{$t('store.上架/升级镜像')}}（{{imageDetail.imageCode}}）</span>
+                <span class="banner-des back-home" @click="toImageDetail"> {{imageDetail.imageCode}} </span>
+                <i class="right-arrow banner-arrow"></i>
+                <span class="banner-des">{{$t('store.上架/升级镜像')}}</span>
             </p>
             <a class="title-work" target="_blank" href="http://tempdocklink/pages/viewpage.action?pageId=22118721"> {{ $t('store.镜像指引') }} </a>
         </h3>
@@ -22,7 +24,7 @@
                         <div class="step-card" v-for="(entry, index) in progressStatus" :key="index"
                             :class="{ 'processing-status': entry.status === 'doing', 'fail-status': entry.status === 'fail', 'success-status': entry.code === 'end' && entry.status === 'success' }">
                             <div class="card-item">
-                                <i class="bk-icon icon-check-1" v-if="entry.status === 'success'"></i>
+                                <i class="devops-icon icon-check-1" v-if="entry.status === 'success'"></i>
                                 <p class="step-label">{{ entry.name }}</p>
                             </div>
                             <div class="retry-bth">
@@ -32,6 +34,7 @@
                                     @click.stop="reCheck"
                                 > {{ $t('store.重新验证') }} <i class="col-line"></i>
                                 </span>
+                                <span class="log-btn" v-if="entry.code === 'check' && entry.status !== 'undo'" @click.stop="readLog"> {{ $t('store.日志') }} </span>
                                 <span class="test-btn" v-if="entry.code === 'test' && entry.status === 'doing'">
                                     <a target="_blank" :href="`/console/pipeline/${imageDetail.projectCode}/list`"> {{ $t('store.测试') }} </a>
                                 </span>
@@ -46,7 +49,7 @@
                                 :title="permissionMsg"
                             > {{ $t('store.继续') }} </bk-button>
                             <div class="audit-tips" v-if="entry.code === 'approve' && entry.status === 'doing'">
-                                <i class="bk-icon icon-info-circle"></i> {{ $t('store.由蓝盾管理员审核') }} </div>
+                                <i class="devops-icon icon-info-circle"></i> {{ $t('store.由蓝盾管理员审核') }} </div>
                         </div>
                     </div>
                 </div>
@@ -63,16 +66,38 @@
                 </div>
             </div>
         </main>
+
+        <bk-sideslider
+            class="build-side-slider"
+            :is-show.sync="sideSliderConfig.show"
+            :title="sideSliderConfig.title"
+            :quick-close="sideSliderConfig.quickClose"
+            :width="sideSliderConfig.width">
+            <template slot="content">
+                <div style="width: 100%; height: 100%"
+                    v-bkloading="{
+                        isLoading: sideSliderConfig.loading.isLoading,
+                        title: sideSliderConfig.loading.title
+                    }">
+                    <build-log v-if="currentBuildNo"
+                        :build-no="currentBuildNo"
+                        :log-url="`store/api/user/store/logs/types/IMAGE/projects/${currentProjectCode}/pipelines/${currentPipelineId}/builds`"
+                    />
+                </div>
+            </template>
+        </bk-sideslider>
     </article>
 </template>
 
 <script>
     import { mapActions } from 'vuex'
+    import BuildLog from '@/components/Log'
     import detailInfo from '../components/detailInfo'
 
     export default {
         components: {
-            detailInfo
+            detailInfo,
+            BuildLog
         },
 
         data () {
@@ -85,7 +110,18 @@
                 permission: true,
                 currentProjectId: '',
                 currentBuildNo: '',
-                currentPipelineId: ''
+                currentPipelineId: '',
+                sideSliderConfig: {
+                    show: false,
+                    title: this.$t('store.查看日志'),
+                    quickClose: true,
+                    width: 820,
+                    value: '',
+                    loading: {
+                        isLoading: false,
+                        title: ''
+                    }
+                }
             }
         },
 
@@ -99,6 +135,16 @@
             isOver () {
                 const lastProgress = this.progressStatus[this.progressStatus.length - 1] || {}
                 return lastProgress.status === 'success'
+            }
+        },
+
+        watch: {
+            'sideSliderConfig.show' (val) {
+                if (!val) {
+                    this.currentProjectCode = ''
+                    this.currentBuildNo = ''
+                    this.currentPipelineId = ''
+                }
             }
         },
 
@@ -119,6 +165,22 @@
                 'requestImagePassTest',
                 'requestRecheckImage'
             ]),
+
+            toImageDetail () {
+                this.$router.push({
+                    name: 'imageOverview',
+                    params: {
+                        imageCode: this.imageDetail.imageCode
+                    }
+                })
+            },
+
+            readLog () {
+                this.sideSliderConfig.show = true
+                this.currentProjectCode = this.storeBuildInfo.projectCode
+                this.currentBuildNo = this.storeBuildInfo.buildId
+                this.currentPipelineId = this.storeBuildInfo.pipelineId
+            },
 
             initData () {
                 Promise.all([this.getImageDetail(), this.getImageProcess()]).catch((err) => {
@@ -200,7 +262,7 @@
 
             toImageList () {
                 this.$router.push({
-                    name: 'atomList',
+                    name: 'workList',
                     params: {
                         type: 'image'
                     }
