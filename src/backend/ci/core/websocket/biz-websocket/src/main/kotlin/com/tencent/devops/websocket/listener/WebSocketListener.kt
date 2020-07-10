@@ -47,7 +47,7 @@ class WebSocketListener @Autowired constructor(
     }
 
     override fun execute(event: SendMessage) {
-        logger.info("WebSocketListener: user:${event.userId},page:${event.page},sessionList:${event.sessionList}")
+        logger.debug("WebSocketListener: user:${event.userId},page:${event.page},sessionList:${event.sessionList}")
         try {
             val startTime = System.currentTimeMillis()
             val sessionList = event.sessionList
@@ -61,7 +61,7 @@ class WebSocketListener @Autowired constructor(
                             objectMapper.writeValueAsString(event.notifyPost)
                         )
                         if (System.currentTimeMillis() - pushStartTime > 500) {
-                            logger.warn("WebSocketListener push msg consuming 500ms, page[$event.page], session[$session]")
+                            logger.warn("WebSocketListener push msg consuming 500ms, page[${event.page}], session[$session]")
                         }
                     }
                 }
@@ -69,7 +69,7 @@ class WebSocketListener @Autowired constructor(
                 logger.info("webSocketListener sessionList is empty. page:${event.page} user:${event.userId} ")
             }
             if (System.currentTimeMillis() - startTime > 1000) {
-                logger.warn("WebSocketListener push all message consuming 1s, page[$event.page], session[${event.sessionList}]")
+                logger.warn("WebSocketListener push all message consuming 1s, page${event.page}, session[${event.sessionList}]")
             }
         } catch (ex: Exception) {
             logger.error("webSocketListener error", ex)
