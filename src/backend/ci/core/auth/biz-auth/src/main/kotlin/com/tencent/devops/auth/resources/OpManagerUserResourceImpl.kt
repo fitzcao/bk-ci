@@ -57,6 +57,7 @@ class OpManagerUserResourceImpl @Autowired constructor(
         timeout: Int,
         managerIds: String
     ): Result<Boolean> {
+
         return Result(mangerUserService.batchCreateManager(
             userId = userId,
             managerId = managerIds,
